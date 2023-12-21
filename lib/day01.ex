@@ -1,10 +1,24 @@
+defmodule Day01.Utils do
+  def get_first_and_last_numbers(input) do
+    [first_number | rest] = input
+
+    case length(rest) do
+      0 ->
+        [first_number, first_number]
+
+      _ ->
+        [last_number | _] = Enum.reverse(rest)
+        [first_number, last_number]
+    end
+  end
+end
+
 defmodule Day01.Part1 do
   def solve(input) do
     input
-    |> String.split("\n")
-    |> Enum.filter(&is_not_empty/1)
+    |> Utils.split_into_lines()
     |> Enum.map(&get_numbers_from_string/1)
-    |> Enum.map(&get_first_and_last_numbers/1)
+    |> Enum.map(&Day01.Utils.get_first_and_last_numbers/1)
     |> Enum.map(&Enum.join/1)
     |> Enum.map(&elem(Integer.parse(&1), 0))
     |> Enum.sum()
@@ -26,19 +40,6 @@ defmodule Day01.Part1 do
     |> String.graphemes()
     |> Enum.filter(&is_valid_number/1)
   end
-
-  def get_first_and_last_numbers(input) do
-    [first_number | rest] = input
-
-    case length(rest) do
-      0 ->
-        [first_number, first_number]
-
-      _ ->
-        [last_number | _] = Enum.reverse(rest)
-        [first_number, last_number]
-    end
-  end
 end
 
 defmodule Day01.Part2 do
@@ -56,9 +57,9 @@ defmodule Day01.Part2 do
 
   def solve(input) do
     input
-    |> String.split("\n", trim: true)
+    |> Utils.split_into_lines()
     |> Enum.map(&get_numbers_from_string/1)
-    |> Enum.map(&get_first_and_last_numbers/1)
+    |> Enum.map(&Day01.Utils.get_first_and_last_numbers/1)
     |> Enum.map(&Enum.join/1)
     |> Enum.map(&elem(Integer.parse(&1), 0))
     |> Enum.sum()
@@ -86,19 +87,6 @@ defmodule Day01.Part2 do
           end)
       end
     end)
-  end
-
-  def get_first_and_last_numbers(input) do
-    [first_number | rest] = input
-
-    case length(rest) do
-      0 ->
-        [first_number, first_number]
-
-      _ ->
-        [last_number | _] = Enum.reverse(rest)
-        [first_number, last_number]
-    end
   end
 end
 
