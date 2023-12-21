@@ -1,4 +1,12 @@
 defmodule Day01.Utils do
+  def process_lines(input, process_line_function) do
+    input
+    |> Utils.split_into_lines()
+    |> Enum.map(process_line_function)
+    |> Enum.map(&get_first_and_last_numbers/1)
+    |> join_and_sum()
+  end
+
   def get_first_and_last_numbers(input) do
     [first_number | rest] = input
 
@@ -11,17 +19,18 @@ defmodule Day01.Utils do
         [first_number, last_number]
     end
   end
+
+  def join_and_sum(lists_of_chars) do
+    lists_of_chars
+    |> Enum.map(&Enum.join/1)
+    |> Enum.map(&elem(Integer.parse(&1), 0))
+    |> Enum.sum()
+  end
 end
 
 defmodule Day01.Part1 do
   def solve(input) do
-    input
-    |> Utils.split_into_lines()
-    |> Enum.map(&get_numbers_from_string/1)
-    |> Enum.map(&Day01.Utils.get_first_and_last_numbers/1)
-    |> Enum.map(&Enum.join/1)
-    |> Enum.map(&elem(Integer.parse(&1), 0))
-    |> Enum.sum()
+    Day01.Utils.process_lines(input, &get_numbers_from_string/1)
   end
 
   def is_valid_number(string) do
@@ -29,10 +38,6 @@ defmodule Day01.Part1 do
       {_, ""} -> true
       _ -> false
     end
-  end
-
-  def is_not_empty(string) do
-    string != ""
   end
 
   def get_numbers_from_string(input) do
@@ -56,13 +61,7 @@ defmodule Day01.Part2 do
   ]
 
   def solve(input) do
-    input
-    |> Utils.split_into_lines()
-    |> Enum.map(&get_numbers_from_string/1)
-    |> Enum.map(&Day01.Utils.get_first_and_last_numbers/1)
-    |> Enum.map(&Enum.join/1)
-    |> Enum.map(&elem(Integer.parse(&1), 0))
-    |> Enum.sum()
+    Day01.Utils.process_lines(input, &get_numbers_from_string/1)
   end
 
   def get_numbers_from_string(input) do
