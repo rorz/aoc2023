@@ -91,7 +91,7 @@ defmodule Day02.Part2 do
       value = get_number(value_string)
 
       Map.update(acc, color, [value], fn values ->
-        values ++ [value]
+        [value | values]
       end)
     end)
   end
