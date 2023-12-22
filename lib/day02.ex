@@ -23,8 +23,7 @@ defmodule Day02.Part1 do
     end
   end
 
-  def get_game_number(game_def) do
-    [_, game_number_string] = String.split(game_def, " ")
+  defp get_game_number("Game " <> game_number_string) do
     get_number_or_zero(game_number_string)
   end
 
@@ -66,6 +65,47 @@ defmodule Day02.Part1 do
   end
 end
 
+defmodule Day02.Part2 do
+  def solve(input) do
+    input
+    |> Utils.split_into_lines()
+    |> Enum.map(&parse_game/1)
+    |> Enum.sum()
+  end
+
+  def get_number(string) do
+    case Integer.parse(string) do
+      {number, _} ->
+        number
+
+      :error ->
+        :error
+    end
+  end
+
+  defp get_color_value_pairs(cube_lists_string) do
+    Regex.split(~r/[,;]/, cube_lists_string)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reduce(Map.new(), fn cube_string, acc ->
+      [value_string, color] = String.split(cube_string, " ")
+      value = get_number(value_string)
+
+      Map.update(acc, color, [value], fn values ->
+        values ++ [value]
+      end)
+    end)
+  end
+
+  defp parse_game(game_line) do
+    [_, cube_lists_string] = String.split(game_line, ":")
+
+    get_color_value_pairs(cube_lists_string)
+    |> Map.values()
+    |> Enum.map(&Enum.max/1)
+    |> Enum.product()
+  end
+end
+
 defmodule Mix.Tasks.Day02 do
   use Mix.Task
 
@@ -76,7 +116,7 @@ defmodule Mix.Tasks.Day02 do
 
     IO.puts("*** Part I ***")
     IO.puts(Day02.Part1.solve(input))
-    # IO.puts("*** Part 2 ***")
-    # IO.puts(Day01.Part2.solve(input))
+    IO.puts("*** Part 2 ***")
+    IO.puts(Day02.Part2.solve(input))
   end
 end

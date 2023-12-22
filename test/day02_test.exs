@@ -12,4 +12,8 @@ defmodule Day02Test do
   test "solves the example input for part 1" do
     assert Day02.Part1.solve(@example_input) == 8
   end
+
+  test "solves the example input for part 2" do
+    assert Day02.Part2.solve(@example_input) == 2286
+  end
 end
