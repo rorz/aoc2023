@@ -2,7 +2,7 @@ defmodule Day03Test do
   use ExUnit.Case
 
   @example """
-    467..114..
+  467..114..
   ...*......
   ..35..633.
   ......#...
