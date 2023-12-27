@@ -26,4 +26,9 @@ defmodule Day03Test do
   test("solves the example input for part 2") do
     assert Day03.Part2.solve(@example) == 467_835
   end
+
+  test("solves the full input for part 2") do
+    {:ok, input} = File.read("input/day03.txt")
+    assert Day03.Part2.solve(input) == 69_527_306
+  end
 end

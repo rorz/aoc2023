@@ -191,7 +191,7 @@ defmodule Day03.Part2 do
           case char_type do
             :gear ->
               acc
-              |> Map.put(:gears, acc.gears ++ [{row, col}])
+              |> Map.put(:gears, acc.gears ++ [{row, col, idx}])
 
             :number ->
               acc
@@ -205,81 +205,67 @@ defmodule Day03.Part2 do
 
     affected_indices =
       gears
-      |> Enum.map(fn {row, col} ->
-        Day03.Utils.get_adjacent_coords(row, col, height, width)
-        |> Enum.map(fn {adj_row, adj_col} ->
-          Day03.Utils.get_idx_for_coords(adj_row, adj_col, height)
-        end)
+      |> Enum.map(fn {row, col, idx} ->
+        adjacent_indices =
+          Day03.Utils.get_adjacent_coords(row, col, height, width)
+          |> Enum.map(fn {adj_row, adj_col} ->
+            Day03.Utils.get_idx_for_coords(adj_row, adj_col, height)
+          end)
+
+        {idx, adjacent_indices}
       end)
-      |> List.flatten()
-      |> Enum.sort()
-      |> Enum.dedup()
 
-    numbers_with_indices =
-      num_chars
-      |> Enum.reduce(
-        [],
-        fn {char, col, idx}, acc ->
-          case acc do
-            [] ->
-              [{char, [idx]}]
+    num_chars
+    |> Enum.reduce(
+      [],
+      fn {char, col, idx}, acc ->
+        case acc do
+          [] ->
+            [{char, [idx]}]
 
-            [{current_number_str, current_indices} | rest_acc] ->
-              is_new_col = col == 0
+          [{current_number_str, current_indices} | rest_acc] ->
+            is_new_col = col == 0
 
-              is_idx_consecutive =
-                case current_indices do
-                  [] -> false
-                  [last_idx | _] -> last_idx == idx - 1
-                end
-
-              if is_new_col or not is_idx_consecutive do
-                [{char, [idx]}] ++ acc
-              else
-                [{current_number_str <> char, [idx] ++ current_indices} | rest_acc]
+            is_idx_consecutive =
+              case current_indices do
+                [] -> false
+                [last_idx | _] -> last_idx == idx - 1
               end
-          end
+
+            if is_new_col or not is_idx_consecutive do
+              [{char, [idx]}] ++ acc
+            else
+              [{current_number_str <> char, [idx] ++ current_indices} | rest_acc]
+            end
         end
-      )
+      end
+    )
+    |> Enum.reduce(
+      %{},
+      fn {number_str, indices}, acc ->
+        {number, _} = Integer.parse(number_str)
 
-    IO.inspect(numbers_with_indices, charlists: :as_lists)
+        matching_affected_indices =
+          affected_indices
+          |> Enum.filter(fn {_, adjacent_indices} ->
+            adjacent_indices
+            |> Enum.any?(fn adjacent_idx -> adjacent_idx in indices end)
+          end)
+          |> Enum.map(fn {idx, _} -> idx end)
 
-    gear_numbers =
-      numbers_with_indices
-      |> Enum.reduce(
-        %{},
-        fn {number_str, indices}, acc ->
-          {number, _} = Integer.parse(number_str)
-
-          case affected_indices
-               |> Enum.find(fn possible_match_idx -> possible_match_idx in indices end) do
+        Enum.reduce(matching_affected_indices, acc, fn affected_idx, inner_acc ->
+          case inner_acc[affected_idx] do
             nil ->
-              acc
+              Map.put(inner_acc, affected_idx, [number])
 
-            affected_idx ->
-              case acc["#{affected_idx}"] do
-                nil ->
-                  acc
-                  |> Map.put("#{affected_idx}", [number])
-
-                numbers_arr ->
-                  acc
-                  |> Map.put("#{affected_idx}", numbers_arr ++ [number])
-              end
+            numbers_arr ->
+              Map.put(inner_acc, affected_idx, numbers_arr ++ [number])
           end
-        end
-      )
-
-    IO.inspect(gear_numbers, charlists: :as_lists, limit: :infinity)
-
-    valid_gear_numbers =
-      gear_numbers
-      |> Map.values()
-      |> Enum.filter(fn numbers_arr -> length(numbers_arr) > 1 end)
-
-    IO.inspect(valid_gear_numbers)
-
-    valid_gear_numbers
+        end)
+      end
+    )
+    |> Map.values()
+    |> Enum.filter(fn numbers_arr -> length(numbers_arr) > 1 end)
     |> Enum.map(&Enum.product/1)
     |> Enum.sum()
   end
