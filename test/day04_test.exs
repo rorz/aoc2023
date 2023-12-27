@@ -15,15 +15,15 @@ defmodule Day04Test do
     assert Day04.Part1.solve(@example) == 13
   end
 
-  @tag full: true, todo: true
+  @tag full: true
   test("solves the full input for part 1") do
     {:ok, full_input} = File.read("input/day04.txt")
     assert Day04.Part1.solve(full_input) == 21919
   end
 
-  @tag example: true, todo: true
+  @tag example: true
   test("solves the example input for part 2") do
-    assert Day04.Part2.solve(@example) == "XXX"
+    assert Day04.Part2.solve(@example) == 30
   end
 
   @tag full: true, todo: true
