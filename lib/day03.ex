@@ -173,8 +173,143 @@ end
 
 defmodule Day03.Part2 do
   def solve(input) do
-    input
-    |> Utils.split_into_lines()
+    lines_of_chars =
+      input
+      |> Day03.Utils.get_lines_of_chars()
+
+    {width, height} =
+      lines_of_chars
+      |> Day03.Utils.get_size_of_matrix()
+
+    %{gears: gears, num_chars: num_chars} =
+      lines_of_chars
+      |> get_flattened_with_index()
+      |> with_metadata(width, height)
+      |> Enum.reduce(
+        %{gears: [], num_chars: []},
+        fn {char, char_type, row, col, idx}, acc ->
+          case char_type do
+            :gear ->
+              acc
+              |> Map.put(:gears, acc.gears ++ [{row, col}])
+
+            :number ->
+              acc
+              |> Map.put(:num_chars, acc.num_chars ++ [{char, col, idx}])
+
+            _ ->
+              acc
+          end
+        end
+      )
+
+    affected_indices =
+      gears
+      |> Enum.map(fn {row, col} ->
+        Day03.Utils.get_adjacent_coords(row, col, height, width)
+        |> Enum.map(fn {adj_row, adj_col} ->
+          Day03.Utils.get_idx_for_coords(adj_row, adj_col, height)
+        end)
+      end)
+      |> List.flatten()
+      |> Enum.sort()
+      |> Enum.dedup()
+
+    numbers_with_indices =
+      num_chars
+      |> Enum.reduce(
+        [],
+        fn {char, col, idx}, acc ->
+          case acc do
+            [] ->
+              [{char, [idx]}]
+
+            [{current_number_str, current_indices} | rest_acc] ->
+              is_new_col = col == 0
+
+              is_idx_consecutive =
+                case current_indices do
+                  [] -> false
+                  [last_idx | _] -> last_idx == idx - 1
+                end
+
+              if is_new_col or not is_idx_consecutive do
+                [{char, [idx]}] ++ acc
+              else
+                [{current_number_str <> char, [idx] ++ current_indices} | rest_acc]
+              end
+          end
+        end
+      )
+
+    IO.inspect(numbers_with_indices, charlists: :as_lists)
+
+    gear_numbers =
+      numbers_with_indices
+      |> Enum.reduce(
+        %{},
+        fn {number_str, indices}, acc ->
+          {number, _} = Integer.parse(number_str)
+
+          case affected_indices
+               |> Enum.find(fn possible_match_idx -> possible_match_idx in indices end) do
+            nil ->
+              acc
+
+            affected_idx ->
+              case acc["#{affected_idx}"] do
+                nil ->
+                  acc
+                  |> Map.put("#{affected_idx}", [number])
+
+                numbers_arr ->
+                  acc
+                  |> Map.put("#{affected_idx}", numbers_arr ++ [number])
+              end
+          end
+        end
+      )
+
+    IO.inspect(gear_numbers, charlists: :as_lists, limit: :infinity)
+
+    valid_gear_numbers =
+      gear_numbers
+      |> Map.values()
+      |> Enum.filter(fn numbers_arr -> length(numbers_arr) > 1 end)
+
+    IO.inspect(valid_gear_numbers)
+
+    valid_gear_numbers
+    |> Enum.map(&Enum.product/1)
+    |> Enum.sum()
+  end
+
+  defp get_flattened_with_index(list) do
+    list
+    |> List.flatten()
+    |> Enum.with_index()
+  end
+
+  defp with_metadata(char_lines, width, height) do
+    char_lines
+    |> Enum.map(fn {char, idx} ->
+      get_metadata({char, idx}, width, height)
+    end)
+  end
+
+  defp get_metadata({char, idx}, width, height) do
+    {row, col} = Day03.Utils.get_coords_at_idx(idx, width, height)
+    char_type = get_type_of_char(char)
+    {char, char_type, row, col, idx}
+  end
+
+  defp get_type_of_char("*"), do: :gear
+
+  defp get_type_of_char(char) do
+    case Integer.parse(char) do
+      {_, _} -> :number
+      _ -> nil
+    end
   end
 end
 
