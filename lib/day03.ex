@@ -10,13 +10,9 @@ defmodule Day03.Part1 do
       lines
       |> Enum.map(&String.graphemes/1)
 
-    IO.inspect(lines, limit: :infinity)
-
     [first_char_line | _] = lines_of_chars
 
     width = length(first_char_line)
-
-    IO.puts("width: #{width}, height: #{height}")
 
     %{affected: affected, numbers: numbers} =
       lines_of_chars
@@ -119,8 +115,6 @@ defmodule Day03.Part1 do
       end)
       |> Enum.map(fn {number, _} -> number end)
 
-    IO.inspect(affected_numbers, limit: :infinity)
-
     affected_ints =
       affected_numbers
       |> Enum.map(fn number_str ->
@@ -129,8 +123,6 @@ defmodule Day03.Part1 do
           :error -> :error
         end
       end)
-
-    IO.inspect(affected_ints, limit: :infinity)
 
     affected_ints
     |> Enum.sum()
