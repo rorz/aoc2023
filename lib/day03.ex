@@ -1,25 +1,58 @@
+defmodule Day03.Utils do
+  def get_coords_at_idx(idx, width, height) do
+    row = floor(idx / height)
+    col = rem(idx, width)
+    {row, col}
+  end
+
+  def get_idx_for_coords(row, col, height) do
+    row * height + col
+  end
+
+  def get_adjacent_coords(row, col, height, width) do
+    [
+      {row - 1, col - 1},
+      {row - 1, col},
+      {row - 1, col + 1},
+      {row, col - 1},
+      {row, col + 1},
+      {row + 1, col - 1},
+      {row + 1, col},
+      {row + 1, col + 1}
+    ]
+    |> Enum.filter(fn {row, col} ->
+      row >= 0 && row < height && col >= 0 && col < width
+    end)
+  end
+
+  def get_size_of_matrix(lines) do
+    height = length(lines)
+    [first_line | _] = lines
+    width = length(first_line)
+    {width, height}
+  end
+
+  def get_lines_of_chars(input) do
+    input
+    |> Utils.split_into_lines()
+    |> Enum.map(&String.graphemes/1)
+  end
+end
+
 defmodule Day03.Part1 do
   def solve(input) do
-    lines =
-      input
-      |> Utils.split_into_lines()
-
-    height = length(lines)
-
     lines_of_chars =
-      lines
-      |> Enum.map(&String.graphemes/1)
+      input
+      |> Day03.Utils.get_lines_of_chars()
 
-    [first_char_line | _] = lines_of_chars
-
-    width = length(first_char_line)
+    {width, height} = Day03.Utils.get_size_of_matrix(lines_of_chars)
 
     %{affected: affected, numbers: numbers} =
       lines_of_chars
       |> List.flatten()
       |> Enum.with_index()
       |> Enum.map(fn {char, idx} ->
-        {row, col} = get_coords_at_idx(idx, width, height)
+        {row, col} = Day03.Utils.get_coords_at_idx(idx, width, height)
         char_type = get_type_of_char(char)
         {char, char_type, row, col, idx}
       end)
@@ -42,8 +75,10 @@ defmodule Day03.Part1 do
 
             :special ->
               adjacent_indices =
-                get_adjacent_coords(row, col, height, width)
-                |> Enum.map(fn {row, col} -> get_idx_for_coords(row, col, height) end)
+                Day03.Utils.get_adjacent_coords(row, col, height, width)
+                |> Enum.map(fn {row, col} ->
+                  Day03.Utils.get_idx_for_coords(row, col, height)
+                end)
 
               affected =
                 (adjacent_indices ++ acc.affected)
@@ -107,24 +142,7 @@ defmodule Day03.Part1 do
             end
           end).()
 
-    affected_numbers =
-      number_results.numbers
-      |> Enum.filter(fn {_, indices} ->
-        indices
-        |> Enum.any?(fn idx -> idx in affected end)
-      end)
-      |> Enum.map(fn {number, _} -> number end)
-
-    affected_ints =
-      affected_numbers
-      |> Enum.map(fn number_str ->
-        case Integer.parse(number_str) do
-          {number, _} -> number
-          :error -> :error
-        end
-      end)
-
-    affected_ints
+    extract_affected_numbers(number_results.numbers, affected)
     |> Enum.sum()
   end
 
@@ -137,29 +155,18 @@ defmodule Day03.Part1 do
     end
   end
 
-  defp get_coords_at_idx(idx, width, height) do
-    row = floor(idx / height)
-    col = rem(idx, width)
-    {row, col}
-  end
-
-  defp get_idx_for_coords(row, col, height) do
-    row * height + col
-  end
-
-  defp get_adjacent_coords(row, col, height, width) do
-    [
-      {row - 1, col - 1},
-      {row - 1, col},
-      {row - 1, col + 1},
-      {row, col - 1},
-      {row, col + 1},
-      {row + 1, col - 1},
-      {row + 1, col},
-      {row + 1, col + 1}
-    ]
-    |> Enum.filter(fn {row, col} ->
-      row >= 0 && row < height && col >= 0 && col < width
+  defp extract_affected_numbers(number_pairs, affected_indices) do
+    number_pairs
+    |> Enum.filter(fn {_, indices} ->
+      indices
+      |> Enum.any?(fn idx -> idx in affected_indices end)
+    end)
+    |> Enum.map(fn {number, _} -> number end)
+    |> Enum.map(fn number_str ->
+      case Integer.parse(number_str) do
+        {number, _} -> number
+        :error -> :error
+      end
     end)
   end
 end
@@ -168,8 +175,6 @@ defmodule Day03.Part2 do
   def solve(input) do
     input
     |> Utils.split_into_lines()
-
-    nil
   end
 end
 
