@@ -15,15 +15,10 @@
       "name": "mix test",
       "request": "launch",
       "task": "test",
-      "taskArgs": [
-        "--trace"
-      ],
+      "taskArgs": ["--trace", "--exclude", "todo", "--exclude", "full"],
       "startApps": true,
       "projectDir": "${workspaceRoot}",
-      "requireFiles": [
-        "test/**/test_helper.exs",
-        "test/**/*_test.exs"
-      ]
+      "requireFiles": ["test/**/test_helper.exs", "test/**/*_test.exs"]
     }
   ]
 }
