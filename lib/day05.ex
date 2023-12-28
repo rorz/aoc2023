@@ -125,15 +125,22 @@ defmodule Day05.Part2 do
 
     computed_ranges =
       seed_ranges
-      |> Enum.map(&get_computed_ranges_for(&1, maps))
+      # |> Enum.map(&get_computed_ranges_for(&1, maps))
+      |> Enum.map(fn seed_range ->
+        IO.puts("Doing a seed range!")
+
+        computed_ranges =
+          get_computed_ranges_for(seed_range, maps)
+
+        # |> List.flatten()
+
+        computed_ranges
+      end)
       |> List.flatten()
 
     IO.inspect(computed_ranges, limit: :infinity)
 
     computed_ranges
-    |> Enum.map(fn {range, carry_ranges} ->
-      [range] ++ carry_ranges
-    end)
     |> List.flatten()
     |> Enum.map(fn range ->
       range.first
@@ -142,70 +149,60 @@ defmodule Day05.Part2 do
   end
 
   def get_computed_ranges_for(range, maps) do
-    get_computed_ranges_for(range, maps, [], "seed")
+    get_computed_ranges_for([range], maps, "seed")
   end
 
-  @spec get_computed_ranges_for(any(), nil | maybe_improper_list() | map(), any(), any()) ::
-          list()
-  def get_computed_ranges_for(range, maps, carry_ranges, type) do
+  def get_computed_ranges_for(ranges, maps, type) do
     case maps[type] do
       nil ->
-        [{range, carry_ranges}]
+        ranges
 
       %{dest: next_type, ranges: mapping_ranges} ->
-        # get_computed_ranges_for(range, maps, next_type)
+        new_ranges =
+          ranges
+          |> Enum.map(fn range ->
+            mapping_ranges
+            |> Enum.map(fn {mapping_range, offset} ->
+              intersect_and_split(range, mapping_range, offset)
+            end)
+          end)
+          |> List.flatten()
+          |> Enum.dedup()
 
-        mapping_ranges
-        |> Enum.map(fn {mapping_range, offset} ->
-          case get_range_intersects(range, mapping_range) do
-            :no_intersect ->
-              get_computed_ranges_for(
-                range,
-                maps,
-                carry_ranges,
-                next_type
-              )
-
-            {non_intersect_ranges, intersect_range} ->
-              new_range = Range.shift(intersect_range, offset)
-
-              get_computed_ranges_for(
-                new_range,
-                maps,
-                carry_ranges ++ non_intersect_ranges,
-                next_type
-              )
-          end
-        end)
+        get_computed_ranges_for(new_ranges, maps, next_type)
     end
   end
 
-  def get_range_intersects(source_range, target_range) do
+  def intersect_and_split(source_range, target_range, offset_when_match) do
+    case get_range_intersect(source_range, target_range) do
+      :no_intersect ->
+        [source_range]
+
+      intersect_range ->
+        [
+          case source_range.first < target_range.first do
+            true -> source_range.first..target_range.first
+            false -> nil
+          end,
+          case source_range.last > target_range.last do
+            true -> target_range.last..source_range.last
+            false -> nil
+          end,
+          Range.shift(intersect_range, offset_when_match)
+        ]
+        |> Enum.filter(fn el -> el != nil end)
+    end
+  end
+
+  def get_range_intersect(source_range, target_range) do
     case Range.disjoint?(source_range, target_range) do
       true ->
         :no_intersect
 
       false ->
-        {source_start, source_end} = get_first_and_last_for_range(source_range)
-        {target_start, target_end} = get_first_and_last_for_range(target_range)
-
-        output_start = max(source_start, target_start)
-        output_end = min(source_end, target_end)
-        output_range = output_start..output_end
-
-        pre_range_arr =
-          case source_start < target_start do
-            false -> []
-            true -> [Range.new(source_start, target_start)]
-          end
-
-        post_range_arr =
-          case source_end > target_end do
-            false -> []
-            true -> [Range.new(target_end, source_end)]
-          end
-
-        {pre_range_arr ++ post_range_arr, output_range}
+        output_start = max(source_range.first, target_range.first)
+        output_end = min(source_range.last, target_range.last)
+        output_start..output_end
     end
   end
 
