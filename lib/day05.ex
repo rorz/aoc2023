@@ -96,6 +96,63 @@ end
 
 defmodule Day05.Part2 do
   def solve(input) do
+    {seeds, lines} = Day05.Utils.get_seeds_and_rest(input)
+    maps = Day05.Utils.get_maps(lines)
+
+    seed_to_soil_ranges =
+      maps["seed"].ranges
+      |> Enum.map(fn {source_start, _, length} ->
+        [source_start, length]
+      end)
+
+    seeds
+    |> convert_seed_ranges_to_list(seed_to_soil_ranges)
+    |> Enum.map(fn value ->
+      Day05.Utils.get_computed_value_for(value, maps)
+    end)
+    |> Enum.min()
+  end
+
+  defp get_overlapping_values(
+         search_start,
+         search_length,
+         target_start,
+         target_length
+       ) do
+    search_end = search_start + search_length - 1
+    target_end = target_start + target_length - 1
+
+    overlap_start = max(search_start, target_start)
+    overlap_end = min(search_end, target_end)
+
+    if overlap_start <= overlap_end do
+      {overlap_start, overlap_end - overlap_start + 1}
+    else
+      nil
+    end
+  end
+
+  defp convert_seed_ranges_to_list(seed_ranges, target_ranges) do
+    seed_ranges
+    |> Enum.chunk_every(2)
+    |> Enum.map(fn [range_start, range_length] ->
+      target_ranges
+      |> Enum.map(fn [target_start, target_length] ->
+        case get_overlapping_values(
+               range_start,
+               range_length,
+               target_start,
+               target_length
+             ) do
+          {overlap_start, overlap_end} ->
+            Enum.to_list(overlap_start..overlap_end)
+
+          nil ->
+            [range_start, range_length]
+        end
+      end)
+    end)
+    |> List.flatten()
   end
 end
 
