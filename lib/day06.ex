@@ -61,9 +61,8 @@ end
 
 defmodule Day06.Part1 do
   def solve(input) do
-    race_results = Day06.Utils.get_race_results(input)
-
-    race_results
+    input
+    |> Day06.Utils.get_race_results()
     |> Enum.map(&Day06.Utils.get_winning_range_for_result/1)
     |> Enum.map(fn range -> Range.size(range) end)
     |> Enum.product()
@@ -71,23 +70,33 @@ defmodule Day06.Part1 do
 end
 
 defmodule Day06.Part2 do
+  @spec solve(binary()) :: non_neg_integer()
   def solve(input) do
-    all_race_results = Day06.Utils.get_race_results(input)
-
-    combined_race_result =
-      all_race_results
-      |> Enum.reduce({0, 0}, fn {time_part, distance_part}, {acc_time, acc_distance} ->
-        {new_time, _} = Integer.parse(Integer.to_string(acc_time) <> Integer.to_string(time_part))
-
-        {new_distance, _} =
-          Integer.parse(Integer.to_string(acc_distance) <> Integer.to_string(distance_part))
-
-        {new_time, new_distance}
-      end)
-
-    combined_race_result
+    input
+    |> Day06.Utils.get_race_results()
+    |> combine_race_results()
     |> Day06.Utils.get_winning_range_for_result()
     |> Range.size()
+  end
+
+  defp combine_race_results(race_results) do
+    race_results
+    |> Enum.reduce(
+      {0, 0},
+      fn {time_part, distance_part}, {acc_time, acc_distance} ->
+        {
+          combine_numbers_as_string(acc_time, time_part),
+          combine_numbers_as_string(acc_distance, distance_part)
+        }
+      end
+    )
+  end
+
+  defp combine_numbers_as_string(tally, part) do
+    {combined, _} =
+      Integer.parse(Integer.to_string(tally) <> Integer.to_string(part))
+
+    combined
   end
 end
 
