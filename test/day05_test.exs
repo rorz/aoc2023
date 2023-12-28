@@ -46,4 +46,10 @@ defmodule Day05Test do
   test("solves the example input for part 2") do
     assert Day05.Part2.solve(@example) == 46
   end
+
+  @tag full: true
+  test("solves the full input for part 2") do
+    {:ok, full_input} = File.read("input/day05.txt")
+    assert Day05.Part2.solve(full_input) == 11_554_135
+  end
 end

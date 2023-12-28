@@ -29,6 +29,6 @@ defmodule Day04Test do
   @tag full: true, todo: true
   test("solves the full input for part 2") do
     {:ok, full_input} = File.read("input/day04.txt")
-    assert Day04.Part2.solve(full_input) == "XXX"
+    assert Day04.Part2.solve(full_input) == 9_881_048
   end
 end

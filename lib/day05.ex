@@ -127,8 +127,6 @@ defmodule Day05.Part2 do
       seed_ranges
       # |> Enum.map(&get_computed_ranges_for(&1, maps))
       |> Enum.map(fn seed_range ->
-        IO.puts("Doing a seed range!")
-
         computed_ranges =
           get_computed_ranges_for(seed_range, maps)
 
@@ -137,8 +135,6 @@ defmodule Day05.Part2 do
         computed_ranges
       end)
       |> List.flatten()
-
-    IO.inspect(computed_ranges, limit: :infinity)
 
     computed_ranges
     |> List.flatten()
@@ -158,39 +154,76 @@ defmodule Day05.Part2 do
         ranges
 
       %{dest: next_type, ranges: mapping_ranges} ->
-        new_ranges =
-          ranges
-          |> Enum.map(fn range ->
-            mapping_ranges
-            |> Enum.map(fn {mapping_range, offset} ->
-              intersect_and_split(range, mapping_range, offset)
-            end)
-          end)
-          |> List.flatten()
-          |> Enum.dedup()
+        {matching_ranges, non_matching_ranges} =
+          mapping_ranges
+          |> Enum.reduce(
+            {[], ranges},
+            fn {mapping_range, offset}, {matching_ranges, non_matching_ranges} ->
+              results =
+                non_matching_ranges
+                |> Enum.map(fn non_matching_range ->
+                  {intersect, remainders} =
+                    intersect_and_split(non_matching_range, mapping_range, offset)
 
-        get_computed_ranges_for(new_ranges, maps, next_type)
+                  {intersect, remainders}
+                end)
+
+              matches =
+                results
+                |> Enum.map(fn {intersect, _} ->
+                  intersect
+                end)
+                |> List.flatten()
+
+              non_matches =
+                results
+                |> Enum.map(fn {_, remainders} -> remainders end)
+                |> List.flatten()
+                |> Enum.dedup()
+
+              {matching_ranges ++ matches, non_matches}
+            end
+          )
+
+        get_computed_ranges_for(
+          matching_ranges ++ non_matching_ranges,
+          maps,
+          next_type
+        )
+
+        # new_ranges =
+        #   ranges
+        #   |> Enum.map(fn range ->
+        #     mapping_ranges
+        #     |> Enum.map(fn {mapping_range, offset} ->
+        #       intersect_and_split(range, mapping_range, offset)
+        #     end)
+        #   end)
+        #   |> List.flatten()
+        #   |> Enum.dedup()
+
+        # get_computed_ranges_for(new_ranges, maps, next_type)
     end
   end
 
   def intersect_and_split(source_range, target_range, offset_when_match) do
     case get_range_intersect(source_range, target_range) do
       :no_intersect ->
-        [source_range]
+        {[], [source_range]}
 
       intersect_range ->
-        [
-          case source_range.first < target_range.first do
-            true -> source_range.first..target_range.first
-            false -> nil
-          end,
-          case source_range.last > target_range.last do
-            true -> target_range.last..source_range.last
-            false -> nil
-          end,
-          Range.shift(intersect_range, offset_when_match)
-        ]
-        |> Enum.filter(fn el -> el != nil end)
+        {[Range.shift(intersect_range, offset_when_match)],
+         [
+           case source_range.first < target_range.first do
+             true -> source_range.first..target_range.first
+             false -> nil
+           end,
+           case source_range.last > target_range.last do
+             true -> target_range.last..source_range.last
+             false -> nil
+           end
+         ]
+         |> Enum.filter(fn el -> el != nil end)}
     end
   end
 
