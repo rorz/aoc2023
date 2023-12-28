@@ -45,6 +45,32 @@ defmodule Day05.Utils do
     {source_start..source_end, offset}
   end
 
+  def get_seeds_and_rest(input) do
+    [seeds_line | lines] = Utils.split_into_lines(input)
+    [_, seed_numbers_str] = String.split(seeds_line, ":")
+
+    seeds =
+      seed_numbers_str
+      |> String.split(" ", trim: true)
+      |> Enum.map(fn seed_str ->
+        {seed_val, _} = Integer.parse(seed_str)
+        seed_val
+      end)
+
+    {seeds, lines}
+  end
+end
+
+defmodule Day05.Part1 do
+  def solve(input) do
+    {seeds, lines} = Day05.Utils.get_seeds_and_rest(input)
+    maps = Day05.Utils.get_maps(lines)
+
+    seeds
+    |> Enum.map(&get_computed_value_for(&1, maps))
+    |> Enum.min()
+  end
+
   def get_computed_value_for(value, maps) do
     get_computed_value_for(value, maps, "seed")
   end
@@ -70,32 +96,6 @@ defmodule Day05.Utils do
         end
     end
   end
-
-  def get_seeds_and_rest(input) do
-    [seeds_line | lines] = Utils.split_into_lines(input)
-    [_, seed_numbers_str] = String.split(seeds_line, ":")
-
-    seeds =
-      seed_numbers_str
-      |> String.split(" ", trim: true)
-      |> Enum.map(fn seed_str ->
-        {seed_val, _} = Integer.parse(seed_str)
-        seed_val
-      end)
-
-    {seeds, lines}
-  end
-end
-
-defmodule Day05.Part1 do
-  def solve(input) do
-    {seeds, lines} = Day05.Utils.get_seeds_and_rest(input)
-    maps = Day05.Utils.get_maps(lines)
-
-    seeds
-    |> Enum.map(&Day05.Utils.get_computed_value_for(&1, maps))
-    |> Enum.min()
-  end
 end
 
 defmodule Day05.Part2 do
@@ -103,40 +103,12 @@ defmodule Day05.Part2 do
     {seeds, lines} = Day05.Utils.get_seeds_and_rest(input)
     maps = Day05.Utils.get_maps(lines)
 
-    seed_ranges =
-      seeds
-      |> Enum.chunk_every(2)
-      |> Enum.map(fn [start, length] -> start..(start + (length - 1)) end)
-
-    # seed_to_soil_ranges =
-    #   maps["seed"].ranges
-    #   |> Enum.map(fn {source_start, _, length} ->
-    #     source_start..(source_start + length)
-    #   end)
-
-    # seeds
-    # |> convert_seed_ranges_to_list(seed_to_soil_ranges)
-    # |> Enum.map(fn value ->
-    #   Day05.Utils.get_computed_value_for(value, maps)
-    # end)
-    # |> Enum.min()
-
-    # IO.inspect(seed_ranges)
-
-    computed_ranges =
-      seed_ranges
-      # |> Enum.map(&get_computed_ranges_for(&1, maps))
-      |> Enum.map(fn seed_range ->
-        computed_ranges =
-          get_computed_ranges_for(seed_range, maps)
-
-        # |> List.flatten()
-
-        computed_ranges
-      end)
-      |> List.flatten()
-
-    computed_ranges
+    seeds
+    |> Enum.chunk_every(2)
+    |> Enum.map(fn [start, length] -> start..(start + (length - 1)) end)
+    |> Enum.map(fn seed_range ->
+      get_computed_ranges_for(seed_range, maps)
+    end)
     |> List.flatten()
     |> Enum.map(fn range ->
       range.first
@@ -144,11 +116,11 @@ defmodule Day05.Part2 do
     |> Enum.min()
   end
 
-  def get_computed_ranges_for(range, maps) do
+  defp get_computed_ranges_for(range, maps) do
     get_computed_ranges_for([range], maps, "seed")
   end
 
-  def get_computed_ranges_for(ranges, maps, type) do
+  defp get_computed_ranges_for(ranges, maps, type) do
     case maps[type] do
       nil ->
         ranges
@@ -190,23 +162,10 @@ defmodule Day05.Part2 do
           maps,
           next_type
         )
-
-        # new_ranges =
-        #   ranges
-        #   |> Enum.map(fn range ->
-        #     mapping_ranges
-        #     |> Enum.map(fn {mapping_range, offset} ->
-        #       intersect_and_split(range, mapping_range, offset)
-        #     end)
-        #   end)
-        #   |> List.flatten()
-        #   |> Enum.dedup()
-
-        # get_computed_ranges_for(new_ranges, maps, next_type)
     end
   end
 
-  def intersect_and_split(source_range, target_range, offset_when_match) do
+  defp intersect_and_split(source_range, target_range, offset_when_match) do
     case get_range_intersect(source_range, target_range) do
       :no_intersect ->
         {[], [source_range]}
@@ -227,7 +186,7 @@ defmodule Day05.Part2 do
     end
   end
 
-  def get_range_intersect(source_range, target_range) do
+  defp get_range_intersect(source_range, target_range) do
     case Range.disjoint?(source_range, target_range) do
       true ->
         :no_intersect
@@ -237,65 +196,6 @@ defmodule Day05.Part2 do
         output_end = min(source_range.last, target_range.last)
         output_start..output_end
     end
-  end
-
-  def get_first_and_last_for_range(range) do
-    {range.first, range.last}
-  end
-
-  defp get_lowest_value(ranges, mapping_ranges) do
-    unaffected_ranges =
-      ranges
-      |> Enum.map(fn range ->
-        mapping_ranges
-        |> Enum.filter(fn {mapping_range, _} ->
-          range |> Range.disjoint?(mapping_range)
-        end)
-      end)
-
-    #
-  end
-
-  defp get_overlapping_values(
-         search_start,
-         search_length,
-         target_start,
-         target_length
-       ) do
-    search_end = search_start + search_length - 1
-    target_end = target_start + target_length - 1
-
-    overlap_start = max(search_start, target_start)
-    overlap_end = min(search_end, target_end)
-
-    if overlap_start <= overlap_end do
-      {overlap_start, overlap_end - overlap_start + 1}
-    else
-      nil
-    end
-  end
-
-  defp convert_seed_ranges_to_list(seed_ranges, target_ranges) do
-    seed_ranges
-    |> Enum.chunk_every(2)
-    |> Enum.map(fn [range_start, range_length] ->
-      target_ranges
-      |> Enum.map(fn [target_start, target_length] ->
-        case get_overlapping_values(
-               range_start,
-               range_length,
-               target_start,
-               target_length
-             ) do
-          {overlap_start, overlap_end} ->
-            Enum.to_list(overlap_start..overlap_end)
-
-          nil ->
-            [range_start, range_length]
-        end
-      end)
-    end)
-    |> List.flatten()
   end
 end
 
