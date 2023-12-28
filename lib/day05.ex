@@ -1,49 +1,27 @@
-defmodule Day05.Part1 do
-  def solve(input) do
-    [seeds_line | lines] =
-      input
-      |> String.split("\n", trim: true)
+defmodule Day05.Utils do
+  def get_maps(lines) do
+    lines
+    |> Enum.reduce([], fn line, acc ->
+      case get_source_dest(line) do
+        {source, dest} ->
+          [%{source: source, dest: dest, ranges: []} | acc]
 
-    [_, seed_numbers_str] =
-      seeds_line
-      |> String.split(":")
+        :no_match ->
+          [current_mapping | rest] = acc
 
-    seeds =
-      seed_numbers_str
-      |> String.split(" ", trim: true)
-
-    maps =
-      lines
-      |> Enum.reduce([], fn line, acc ->
-        case get_source_dest(line) do
-          {source, dest} ->
-            [%{source: source, dest: dest, ranges: []} | acc]
-
-          :no_match ->
-            [current_mapping | rest] = acc
-
-            [
-              current_mapping
-              |> Map.put(:ranges, [
-                get_ranges(line) | current_mapping.ranges
-              ])
-              | rest
-            ]
-        end
-      end)
-      |> Enum.reduce(%{}, fn mapping, acc ->
-        %{source: source, dest: dest, ranges: ranges} = mapping
-        acc |> Map.put(source, %{dest: dest, ranges: ranges})
-      end)
-
-    seeds
-    |> Enum.map(fn seed_str ->
-      {seed, _} = Integer.parse(seed_str)
-
-      seed
-      |> get_computed_value_for("seed", maps)
+          [
+            current_mapping
+            |> Map.put(:ranges, [
+              get_ranges(line) | current_mapping.ranges
+            ])
+            | rest
+          ]
+      end
     end)
-    |> Enum.min()
+    |> Enum.reduce(%{}, fn mapping, acc ->
+      %{source: source, dest: dest, ranges: ranges} = mapping
+      acc |> Map.put(source, %{dest: dest, ranges: ranges})
+    end)
   end
 
   defp get_source_dest(line) do
@@ -63,7 +41,11 @@ defmodule Day05.Part1 do
     {source_start, dest_start, length}
   end
 
-  defp get_computed_value_for(value, type, maps) do
+  def get_computed_value_for(value, maps) do
+    get_computed_value_for(value, maps, "seed")
+  end
+
+  def get_computed_value_for(value, maps, type) do
     case maps[type] do
       nil ->
         value
@@ -77,18 +59,43 @@ defmodule Day05.Part1 do
         ) do
           {source_start, dest_start, _} ->
             new_value = dest_start + (value - source_start)
-            get_computed_value_for(new_value, dest, maps)
+            get_computed_value_for(new_value, maps, dest)
 
           _ ->
-            get_computed_value_for(value, dest, maps)
+            get_computed_value_for(value, maps, dest)
         end
     end
+  end
+
+  def get_seeds_and_rest(input) do
+    [seeds_line | lines] = Utils.split_into_lines(input)
+    [_, seed_numbers_str] = String.split(seeds_line, ":")
+
+    seeds =
+      seed_numbers_str
+      |> String.split(" ", trim: true)
+      |> Enum.map(fn seed_str ->
+        {seed_val, _} = Integer.parse(seed_str)
+        seed_val
+      end)
+
+    {seeds, lines}
+  end
+end
+
+defmodule Day05.Part1 do
+  def solve(input) do
+    {seeds, lines} = Day05.Utils.get_seeds_and_rest(input)
+    maps = Day05.Utils.get_maps(lines)
+
+    seeds
+    |> Enum.map(&Day05.Utils.get_computed_value_for(&1, maps))
+    |> Enum.min()
   end
 end
 
 defmodule Day05.Part2 do
   def solve(input) do
-    nil
   end
 end
 

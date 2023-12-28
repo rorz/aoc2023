@@ -44,6 +44,6 @@ defmodule Day05Test do
 
   @tag example: true
   test("solves the example input for part 2") do
-    assert Day05.Part2.solve(@example) == nil
+    assert Day05.Part2.solve(@example) == 46
   end
 end
