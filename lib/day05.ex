@@ -38,7 +38,11 @@ defmodule Day05.Utils do
     {dest_start, _} = Integer.parse(dest_start_str)
     {source_start, _} = Integer.parse(source_start_str)
     {length, _} = Integer.parse(length_str)
-    {source_start, dest_start, length}
+
+    source_end = source_start + (length - 1)
+    offset = dest_start - source_start
+
+    {source_start..source_end, offset}
   end
 
   def get_computed_value_for(value, maps) do
@@ -53,12 +57,12 @@ defmodule Day05.Utils do
       %{dest: dest, ranges: ranges} ->
         case(
           ranges
-          |> Enum.find(fn {source_start, _, length} ->
-            value >= source_start and value < source_start + length
+          |> Enum.find(fn {range, _} ->
+            value in range
           end)
         ) do
-          {source_start, dest_start, _} ->
-            new_value = dest_start + (value - source_start)
+          {_, offset} ->
+            new_value = value + offset
             get_computed_value_for(new_value, maps, dest)
 
           _ ->
@@ -99,18 +103,127 @@ defmodule Day05.Part2 do
     {seeds, lines} = Day05.Utils.get_seeds_and_rest(input)
     maps = Day05.Utils.get_maps(lines)
 
-    seed_to_soil_ranges =
-      maps["seed"].ranges
-      |> Enum.map(fn {source_start, _, length} ->
-        [source_start, length]
-      end)
+    seed_ranges =
+      seeds
+      |> Enum.chunk_every(2)
+      |> Enum.map(fn [start, length] -> start..(start + (length - 1)) end)
 
-    seeds
-    |> convert_seed_ranges_to_list(seed_to_soil_ranges)
-    |> Enum.map(fn value ->
-      Day05.Utils.get_computed_value_for(value, maps)
+    # seed_to_soil_ranges =
+    #   maps["seed"].ranges
+    #   |> Enum.map(fn {source_start, _, length} ->
+    #     source_start..(source_start + length)
+    #   end)
+
+    # seeds
+    # |> convert_seed_ranges_to_list(seed_to_soil_ranges)
+    # |> Enum.map(fn value ->
+    #   Day05.Utils.get_computed_value_for(value, maps)
+    # end)
+    # |> Enum.min()
+
+    # IO.inspect(seed_ranges)
+
+    computed_ranges =
+      seed_ranges
+      |> Enum.map(&get_computed_ranges_for(&1, maps))
+      |> List.flatten()
+
+    IO.inspect(computed_ranges, limit: :infinity)
+
+    computed_ranges
+    |> Enum.map(fn {range, carry_ranges} ->
+      [range] ++ carry_ranges
+    end)
+    |> List.flatten()
+    |> Enum.map(fn range ->
+      range.first
     end)
     |> Enum.min()
+  end
+
+  def get_computed_ranges_for(range, maps) do
+    get_computed_ranges_for(range, maps, [], "seed")
+  end
+
+  @spec get_computed_ranges_for(any(), nil | maybe_improper_list() | map(), any(), any()) ::
+          list()
+  def get_computed_ranges_for(range, maps, carry_ranges, type) do
+    case maps[type] do
+      nil ->
+        [{range, carry_ranges}]
+
+      %{dest: next_type, ranges: mapping_ranges} ->
+        # get_computed_ranges_for(range, maps, next_type)
+
+        mapping_ranges
+        |> Enum.map(fn {mapping_range, offset} ->
+          case get_range_intersects(range, mapping_range) do
+            :no_intersect ->
+              get_computed_ranges_for(
+                range,
+                maps,
+                carry_ranges,
+                next_type
+              )
+
+            {non_intersect_ranges, intersect_range} ->
+              new_range = Range.shift(intersect_range, offset)
+
+              get_computed_ranges_for(
+                new_range,
+                maps,
+                carry_ranges ++ non_intersect_ranges,
+                next_type
+              )
+          end
+        end)
+    end
+  end
+
+  def get_range_intersects(source_range, target_range) do
+    case Range.disjoint?(source_range, target_range) do
+      true ->
+        :no_intersect
+
+      false ->
+        {source_start, source_end} = get_first_and_last_for_range(source_range)
+        {target_start, target_end} = get_first_and_last_for_range(target_range)
+
+        output_start = max(source_start, target_start)
+        output_end = min(source_end, target_end)
+        output_range = output_start..output_end
+
+        pre_range_arr =
+          case source_start < target_start do
+            false -> []
+            true -> [Range.new(source_start, target_start)]
+          end
+
+        post_range_arr =
+          case source_end > target_end do
+            false -> []
+            true -> [Range.new(target_end, source_end)]
+          end
+
+        {pre_range_arr ++ post_range_arr, output_range}
+    end
+  end
+
+  def get_first_and_last_for_range(range) do
+    {range.first, range.last}
+  end
+
+  defp get_lowest_value(ranges, mapping_ranges) do
+    unaffected_ranges =
+      ranges
+      |> Enum.map(fn range ->
+        mapping_ranges
+        |> Enum.filter(fn {mapping_range, _} ->
+          range |> Range.disjoint?(mapping_range)
+        end)
+      end)
+
+    #
   end
 
   defp get_overlapping_values(
