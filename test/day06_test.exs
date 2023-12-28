@@ -13,7 +13,6 @@ defmodule Day06Test do
 
   @tag example: true
   test("solves the example input for part 2") do
-    assert Day06.Part2.solve(@example) == nil
-    IO.puts("TODO")
+    assert Day06.Part2.solve(@example) == 71503
   end
 end

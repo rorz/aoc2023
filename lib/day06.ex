@@ -21,19 +21,8 @@ defmodule Day06.Utils do
 
     numbers
   end
-end
 
-defmodule Day06.Part1 do
-  def solve(input) do
-    race_results = Day06.Utils.get_race_results(input)
-
-    race_results
-    |> Enum.map(&get_winning_range_for_result/1)
-    |> Enum.map(fn range -> Range.size(range) end)
-    |> Enum.product()
-  end
-
-  defp get_winning_range_for_result({time_limit, distance_to_beat}) do
+  def get_winning_range_for_result({time_limit, distance_to_beat}) do
     lower_bound =
       stop_at_winning_time(
         0..time_limit,
@@ -70,9 +59,35 @@ defmodule Day06.Part1 do
   end
 end
 
+defmodule Day06.Part1 do
+  def solve(input) do
+    race_results = Day06.Utils.get_race_results(input)
+
+    race_results
+    |> Enum.map(&Day06.Utils.get_winning_range_for_result/1)
+    |> Enum.map(fn range -> Range.size(range) end)
+    |> Enum.product()
+  end
+end
+
 defmodule Day06.Part2 do
   def solve(input) do
-    nil
+    all_race_results = Day06.Utils.get_race_results(input)
+
+    combined_race_result =
+      all_race_results
+      |> Enum.reduce({0, 0}, fn {time_part, distance_part}, {acc_time, acc_distance} ->
+        {new_time, _} = Integer.parse(Integer.to_string(acc_time) <> Integer.to_string(time_part))
+
+        {new_distance, _} =
+          Integer.parse(Integer.to_string(acc_distance) <> Integer.to_string(distance_part))
+
+        {new_time, new_distance}
+      end)
+
+    combined_race_result
+    |> Day06.Utils.get_winning_range_for_result()
+    |> Range.size()
   end
 end
 
