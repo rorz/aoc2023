@@ -17,14 +17,7 @@ defmodule Day05.Part1 do
       |> Enum.reduce([], fn line, acc ->
         case get_source_dest(line) do
           {source, dest} ->
-            [
-              %{
-                source: source,
-                dest: dest,
-                ranges: []
-              }
-              | acc
-            ]
+            [%{source: source, dest: dest, ranges: []} | acc]
 
           :no_match ->
             [current_mapping | rest] = acc
