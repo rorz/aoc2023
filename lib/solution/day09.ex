@@ -61,7 +61,30 @@ end
 
 defmodule Day09.Part2 do
   def solve(input) do
-    input
+    all_difference_lines =
+      input
+      |> Day09.Utils.get_all_difference_lines()
+
+    IO.inspect(all_difference_lines)
+
+    results =
+      all_difference_lines
+      |> Enum.map(
+        &Enum.reduce(&1, 0, fn difference_line, carry ->
+          [curr_num | _] = difference_line
+
+          new_carry = curr_num - carry
+
+          IO.inspect(carry)
+
+          new_carry
+        end)
+      )
+
+    IO.inspect(results)
+
+    results
+    |> Enum.sum()
   end
 end
 

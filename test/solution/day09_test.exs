@@ -17,6 +17,6 @@ defmodule Day09Test do
 
   @tag example: true
   test "solves the example input for part 2" do
-    assert Part2.solve(@example) == 5
+    assert Part2.solve(@example) == 2
   end
 end
