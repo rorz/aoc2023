@@ -1,3 +1,5 @@
+import Math
+
 defmodule Day08.Utils do
   def parse_input(input) do
     {instruction_line, map_lines_str} =
@@ -90,7 +92,19 @@ defmodule Day08.Part2 do
       network_map
       |> get_keys_with(~r/A$/)
 
-    traverse_group(instructions, network_map, search_keys, ~r/Z$/, 1)
+    cycles =
+      search_keys
+      |> Enum.map(fn key ->
+        Day08.Utils.traverse(instructions, network_map, key, ~r/Z$/, 1)
+      end)
+
+    lcm =
+      cycles
+      |> Enum.reduce(1, fn cycle, acc ->
+        lcm(acc, cycle)
+      end)
+
+    lcm
   end
 
   defp traverse_group(instructions, network_map, search_keys, stop_at, curr_move) do
