@@ -40,52 +40,43 @@ defmodule Day09.Utils do
     |> elem(1)
   end
 
+  def extrapolate(difference_lines, at) do
+    difference_lines
+    |> Enum.reduce(0, fn difference_line, acc ->
+      num =
+        Enum.at(
+          difference_line,
+          case at do
+            :start -> 0
+            :end -> length(difference_line) - 1
+          end
+        )
+
+      case at do
+        :start -> num - acc
+        :end -> num + acc
+      end
+    end)
+  end
+
+  def solve(input, at) do
+    input
+    |> Day09.Utils.get_all_difference_lines()
+    |> Enum.map(&Day09.Utils.extrapolate(&1, at))
+    |> Enum.sum()
+  end
+
   defp is_zero?(num) do
     num == 0
   end
 end
 
 defmodule Day09.Part1 do
-  def solve(input) do
-    input
-    |> Day09.Utils.get_all_difference_lines()
-    |> Enum.map(
-      &Enum.reduce(&1, 0, fn difference_line, acc ->
-        [last_num | _] = difference_line |> Enum.reverse()
-        acc + last_num
-      end)
-    )
-    |> Enum.sum()
-  end
+  def solve(input), do: input |> Day09.Utils.solve(:end)
 end
 
 defmodule Day09.Part2 do
-  def solve(input) do
-    all_difference_lines =
-      input
-      |> Day09.Utils.get_all_difference_lines()
-
-    IO.inspect(all_difference_lines)
-
-    results =
-      all_difference_lines
-      |> Enum.map(
-        &Enum.reduce(&1, 0, fn difference_line, carry ->
-          [curr_num | _] = difference_line
-
-          new_carry = curr_num - carry
-
-          IO.inspect(carry)
-
-          new_carry
-        end)
-      )
-
-    IO.inspect(results)
-
-    results
-    |> Enum.sum()
-  end
+  def solve(input), do: input |> Day09.Utils.solve(:start)
 end
 
 defmodule Mix.Tasks.Day09 do
