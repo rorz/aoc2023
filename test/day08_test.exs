@@ -28,6 +28,6 @@ defmodule Day08Test do
 
   @tag example: true
   test "solves the second example input for part 1" do
-    assert Day08.Part2.solve(@example_second) == 6
+    assert Day08.Part1.solve(@example_second) == 6
   end
 end
