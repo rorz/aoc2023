@@ -76,13 +76,13 @@ defmodule Mix.Tasks.Aoc.Gen do
 
   Mix.Generator.embed_template(:solution, """
   defmodule Day<%= :io_lib.format("~2..0B", [@day]) %>.Part1 do
-    solve(input) do
+    def solve(input) do
       nil
     end
   end
 
   defmodule Day<%= :io_lib.format("~2..0B", [@day]) %>.Part2 do
-    solve(input) do
+    def solve(input) do
       nil
     end
   end
