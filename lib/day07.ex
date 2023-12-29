@@ -1,17 +1,46 @@
 defmodule Day07.Sorting do
   defp sort_by_hand_rank({_, hand_a, _}, {_, hand_b, _}) do
-    Day07.HandCalculation.get_rank(hand_a) >= Day07.HandCalculation.get_rank(hand_b)
+    Day07.HandCalculation.get_rank(hand_a) >=
+      Day07.HandCalculation.get_rank(hand_b)
   end
 
   defp sort_by_inner_group(hands) do
     hands
+    |> Enum.map(fn {cards, hand, bid} ->
+      {
+        Enum.map(cards, fn card ->
+          if card == :joker do
+            0
+          else
+            card
+          end
+        end),
+        hand,
+        bid
+      }
+    end)
     |> Enum.chunk_by(fn {_, hand, _} -> hand end)
-    |> Enum.flat_map(fn group ->
-      group
+    # |> Enum.map(fn hand_group ->
+    #   hand_group
+    #   |> Enum.sort(fn {cards_a, _, _}, {cards_b, _, _} ->
+    #     Enum.count(cards_a, fn card -> card == 0 end) <=
+    #       Enum.count(cards_b, fn card -> card == 0 end)
+    #   end)
+    #   |> Enum.chunk_by(fn {cards, _, _} ->
+    #     Enum.count(cards, fn card -> card == 0 end)
+    #   end)
+    # end)
+    |> Enum.map(fn hand_group ->
+      hand_group
+      # |> Enum.map(fn joker_count_group ->
+      # joker_count_group
       |> Enum.sort(fn {cards_a, _, _}, {cards_b, _, _} ->
         cards_a >= cards_b
       end)
+
+      # end)
     end)
+    |> List.flatten()
   end
 
   def sort(hands) do
@@ -65,9 +94,11 @@ end
 defmodule Day07.HandCalculation do
   def get_type(cards) do
     cards_by_value =
-      cards
-      |> Enum.sort()
-      |> Enum.chunk_by(& &1)
+      if :joker in cards do
+        replace_jokers_with_best_card(cards)
+      else
+        chunk_by_card_value(cards)
+      end
 
     case length(cards_by_value) do
       1 ->
@@ -93,6 +124,59 @@ defmodule Day07.HandCalculation do
       5 ->
         :high_card
     end
+  end
+
+  defp chunk_by_card_value(cards) do
+    cards
+    |> Enum.sort()
+    |> Enum.chunk_by(& &1)
+  end
+
+  def replace_jokers_with_best_card(cards) do
+    joker_count = get_joker_count(cards)
+    card_count = length(cards)
+
+    chunked_remaining_cards =
+      cards
+      |> Enum.reject(&card_is_joker/1)
+      |> chunk_by_card_value()
+
+    case length(chunked_remaining_cards) do
+      # all jokers
+      0 ->
+        cards
+        |> chunk_by_card_value()
+
+      # no groupings
+      ^card_count ->
+        cards
+        |> chunk_by_card_value()
+
+      # everything-of-a-kind
+      1 ->
+        [only_chunk] = chunked_remaining_cards
+        [value | _] = only_chunk
+
+        List.duplicate(value, card_count)
+        |> chunk_by_card_value()
+
+      # else
+      _ ->
+        [biggest_chunk | chunks] =
+          chunked_remaining_cards
+          |> Enum.sort(&(length(&1) >= length(&2)))
+
+        [best_value | _] = biggest_chunk
+        [biggest_chunk ++ List.duplicate(best_value, joker_count)] ++ chunks
+    end
+  end
+
+  def card_is_joker(card_value) do
+    card_value == :joker
+  end
+
+  def get_joker_count(cards) do
+    cards |> Enum.count(&card_is_joker/1)
   end
 
   defp inner_group_has_length(list, length) do
@@ -125,9 +209,14 @@ defmodule Day07.GameCalculation do
   end
 
   def compute_game_value(game_lines, jack_type) do
-    game_lines
-    |> Enum.map(&Day07.Parsing.parse_hand_line(&1, jack_type))
-    |> Day07.Sorting.sort()
+    sorted_game_lines =
+      game_lines
+      |> Enum.map(&Day07.Parsing.parse_hand_line(&1, jack_type))
+      |> Day07.Sorting.sort()
+
+    # IO.inspect(sorted_game_lines, limit: :infinity, charlists: :as_lists)
+
+    sorted_game_lines
     |> Enum.reverse()
     |> compute_bid_values()
     |> Enum.sum()
