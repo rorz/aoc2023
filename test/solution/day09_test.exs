@@ -15,9 +15,8 @@ defmodule Day09Test do
     assert Part1.solve(@example) == 114
   end
 
-  @tag :skip
   @tag example: true
   test "solves the example input for part 2" do
-    assert Part2.solve(@example) == nil
+    assert Part2.solve(@example) == 5
   end
 end
