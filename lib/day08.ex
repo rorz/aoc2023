@@ -55,51 +55,28 @@ defmodule Day08.Part1 do
   end
 
   defp traverse(instructions, network_map) do
-    traverse(instructions, 0, "AAA", "ZZZ", network_map, 1)
+    traverse(instructions, network_map, "AAA", "ZZZ", 1)
   end
 
-  def traverse(
-        instructions,
-        instr_idx,
-        start_at,
-        stop_at,
-        network_map,
-        moves
-      ) do
-    instruction = instructions |> Enum.at(instr_idx)
+  def traverse(instructions, network_map, start_at, stop_at, curr_move) do
+    curr_idx = rem(curr_move - 1, length(instructions))
+    instruction = instructions |> Enum.at(curr_idx)
     {left_target, right_target} = network_map[start_at]
 
-    next_idx_unbounded = instr_idx + 1
-    next_idx = rem(next_idx_unbounded, length(instructions))
+    next_traverse = fn target ->
+      next_move = curr_move + 1
+      traverse(instructions, network_map, target, stop_at, next_move)
+    end
+
+    move_or_return = fn target ->
+      if target == stop_at,
+        do: curr_move,
+        else: next_traverse.(target)
+    end
 
     case instruction do
-      :left ->
-        if left_target == stop_at do
-          moves
-        else
-          traverse(
-            instructions,
-            next_idx,
-            left_target,
-            stop_at,
-            network_map,
-            moves + 1
-          )
-        end
-
-      :right ->
-        if right_target == stop_at do
-          moves
-        else
-          traverse(
-            instructions,
-            next_idx,
-            right_target,
-            stop_at,
-            network_map,
-            moves + 1
-          )
-        end
+      :left -> move_or_return.(left_target)
+      :right -> move_or_return.(right_target)
     end
   end
 end
