@@ -1,6 +1,9 @@
 defmodule Day08Test do
   use ExUnit.Case
 
+  alias Day08.Part1, as: Part1
+  alias Day08.Part2, as: Part2
+
   @example_part1_1 """
   RL
 
@@ -23,12 +26,12 @@ defmodule Day08Test do
 
   @tag example: true
   test "solves the first example input for part 1" do
-    assert Day08.Part1.solve(@example_part1_1) == 2
+    assert Part1.solve(@example_part1_1) == 2
   end
 
   @tag example: true
   test "solves the second example input for part 1" do
-    assert Day08.Part1.solve(@example_part1_2) == 6
+    assert Part1.solve(@example_part1_2) == 6
   end
 
   @example_part2 """
@@ -46,6 +49,6 @@ defmodule Day08Test do
 
   @tag example: true
   test "solves the example input for part 2" do
-    assert Day08.Part2.solve(@example_part2) == 6
+    assert Part2.solve(@example_part2) == 6
   end
 end
