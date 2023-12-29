@@ -16,6 +16,6 @@ defmodule Day07Test do
 
   @tag example: true
   test("it solves the example input for part 2") do
-    assert Day07.Part2.solve(@example) == nil
+    assert Day07.Part2.solve(@example) == 5905
   end
 end

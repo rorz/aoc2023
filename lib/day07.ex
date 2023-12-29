@@ -1,26 +1,6 @@
-defmodule Day07.Part1 do
-  def solve(input) do
-    input
-    |> Utils.split_into_lines()
-    |> Enum.map(&parse_hand_line/1)
-    |> sort()
-    |> Enum.reverse()
-    |> compute_bid_values()
-    |> Enum.sum()
-  end
-
-  defp parse_hand_line(line) do
-    [hand_str, bid_str] = String.split(line, " ", trim: true)
-
-    cards = convert_hand_to_card_nums(hand_str)
-    hand = get_hand_type(cards)
-    bid = Utils.to_int(bid_str)
-
-    {cards, hand, bid}
-  end
-
+defmodule Day07.Sorting do
   defp sort_by_hand_rank({_, hand_a, _}, {_, hand_b, _}) do
-    get_hand_rank(hand_a) >= get_hand_rank(hand_b)
+    Day07.HandCalculation.get_rank(hand_a) >= Day07.HandCalculation.get_rank(hand_b)
   end
 
   defp sort_by_inner_group(hands) do
@@ -34,20 +14,25 @@ defmodule Day07.Part1 do
     end)
   end
 
-  defp sort(hands) do
+  def sort(hands) do
     hands
     |> Enum.sort(&sort_by_hand_rank/2)
     |> sort_by_inner_group()
   end
+end
 
-  defp compute_bid_values(hands) do
-    hands
-    |> Enum.map(fn {_, _, bid} -> bid end)
-    |> Enum.with_index(1)
-    |> Enum.map(fn {index, bid} -> index * bid end)
+defmodule Day07.Parsing do
+  def parse_hand_line(line, jack_type) do
+    [hand_str, bid_str] = String.split(line, " ", trim: true)
+
+    cards = convert_hand_to_card_nums(hand_str, jack_type)
+    hand = Day07.HandCalculation.get_type(cards)
+    bid = Utils.to_int(bid_str)
+
+    {cards, hand, bid}
   end
 
-  defp convert_hand_to_card_nums(hand_str) do
+  defp convert_hand_to_card_nums(hand_str, jack_type) do
     hand_str
     |> String.graphemes()
     |> Enum.map(fn card_str ->
@@ -62,7 +47,10 @@ defmodule Day07.Part1 do
           12
 
         "J" ->
-          11
+          case jack_type do
+            :jack -> 11
+            :joker -> :joker
+          end
 
         "T" ->
           10
@@ -72,8 +60,10 @@ defmodule Day07.Part1 do
       end
     end)
   end
+end
 
-  defp get_hand_type(cards) do
+defmodule Day07.HandCalculation do
+  def get_type(cards) do
     cards_by_value =
       cards
       |> Enum.sort()
@@ -105,7 +95,11 @@ defmodule Day07.Part1 do
     end
   end
 
-  defp get_hand_rank(hand_type) do
+  defp inner_group_has_length(list, length) do
+    list |> Enum.any?(fn group -> length(group) == length end)
+  end
+
+  def get_rank(hand_type) do
     case hand_type do
       :high_card -> 0
       :one_pair -> 1
@@ -116,15 +110,43 @@ defmodule Day07.Part1 do
       :five_of_a_kind -> 6
     end
   end
+end
 
-  defp inner_group_has_length(list, length) do
-    list |> Enum.any?(fn group -> length(group) == length end)
+defmodule Day07.GameCalculation do
+  defp compute_bid_values(hands) do
+    hands
+    |> Enum.map(fn {_, _, bid} -> bid end)
+    |> Enum.with_index(1)
+    |> Enum.map(fn {index, bid} -> index * bid end)
+  end
+
+  def compute_game_value(game_lines) do
+    compute_game_value(game_lines, :jack)
+  end
+
+  def compute_game_value(game_lines, jack_type) do
+    game_lines
+    |> Enum.map(&Day07.Parsing.parse_hand_line(&1, jack_type))
+    |> Day07.Sorting.sort()
+    |> Enum.reverse()
+    |> compute_bid_values()
+    |> Enum.sum()
+  end
+end
+
+defmodule Day07.Part1 do
+  def solve(input) do
+    input
+    |> Utils.split_into_lines()
+    |> Day07.GameCalculation.compute_game_value()
   end
 end
 
 defmodule Day07.Part2 do
   def solve(input) do
-    nil
+    input
+    |> Utils.split_into_lines()
+    |> Day07.GameCalculation.compute_game_value(:joker)
   end
 end
 
