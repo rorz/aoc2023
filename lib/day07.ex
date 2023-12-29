@@ -20,25 +20,11 @@ defmodule Day07.Sorting do
       }
     end)
     |> Enum.chunk_by(fn {_, hand, _} -> hand end)
-    # |> Enum.map(fn hand_group ->
-    #   hand_group
-    #   |> Enum.sort(fn {cards_a, _, _}, {cards_b, _, _} ->
-    #     Enum.count(cards_a, fn card -> card == 0 end) <=
-    #       Enum.count(cards_b, fn card -> card == 0 end)
-    #   end)
-    #   |> Enum.chunk_by(fn {cards, _, _} ->
-    #     Enum.count(cards, fn card -> card == 0 end)
-    #   end)
-    # end)
     |> Enum.map(fn hand_group ->
       hand_group
-      # |> Enum.map(fn joker_count_group ->
-      # joker_count_group
       |> Enum.sort(fn {cards_a, _, _}, {cards_b, _, _} ->
         cards_a >= cards_b
       end)
-
-      # end)
     end)
     |> List.flatten()
   end
@@ -209,14 +195,9 @@ defmodule Day07.GameCalculation do
   end
 
   def compute_game_value(game_lines, jack_type) do
-    sorted_game_lines =
-      game_lines
-      |> Enum.map(&Day07.Parsing.parse_hand_line(&1, jack_type))
-      |> Day07.Sorting.sort()
-
-    # IO.inspect(sorted_game_lines, limit: :infinity, charlists: :as_lists)
-
-    sorted_game_lines
+    game_lines
+    |> Enum.map(&Day07.Parsing.parse_hand_line(&1, jack_type))
+    |> Day07.Sorting.sort()
     |> Enum.reverse()
     |> compute_bid_values()
     |> Enum.sum()
