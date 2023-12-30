@@ -262,11 +262,11 @@ defmodule Day10.Part2 do
       :vertical ->
         seek_min =
           col..1
-          |> seek_reduce_col(tiles, path_indices, row)
+          |> seek_reduce_by(:col, row, tiles, path_indices)
 
         seek_max =
           col..col_max
-          |> seek_reduce_col(tiles, path_indices, row)
+          |> seek_reduce_by(:col, row, tiles, path_indices)
 
         if elem(seek_min, 0) == elem(seek_max, 0) do
           []
@@ -281,11 +281,11 @@ defmodule Day10.Part2 do
       :horizontal ->
         seek_min =
           row..1
-          |> seek_reduce_row(tiles, path_indices, col)
+          |> seek_reduce_by(:row, col, tiles, path_indices)
 
         seek_max =
           row..row_max
-          |> seek_reduce_row(tiles, path_indices, col)
+          |> seek_reduce_by(:row, col, tiles, path_indices)
 
         if elem(seek_min, 0) == elem(seek_max, 0) do
           []
@@ -299,39 +299,25 @@ defmodule Day10.Part2 do
     end
   end
 
-  defp seek_reduce_col(range, tiles, path_indices, row) do
+  defp seek_reduce_by(range, seek_type, orth, tiles, path_indices) do
     range
     |> Enum.reduce_while({:first, []}, fn seek, {result, s_tiles} ->
-      c_tile = Day10.Utils.get_tile(tiles, seek, row)
-      {_, c_col, _, c_idx} = c_tile
+      c_tile =
+        case seek_type do
+          :col -> Day10.Utils.get_tile(tiles, seek, orth)
+          :row -> Day10.Utils.get_tile(tiles, orth, seek)
+        end
+
+      {_, c_col, c_row, c_idx} = c_tile
 
       cond do
         result != :first and c_idx in path_indices ->
           {:halt, {:path, s_tiles}}
 
-        c_col == range.last ->
+        seek_type == :col and c_col == range.last ->
           {:halt, {:oob, []}}
 
-        result != :first ->
-          {:cont, {:unknown, [c_tile | s_tiles]}}
-
-        result == :first ->
-          {:cont, {:unknown, s_tiles}}
-      end
-    end)
-  end
-
-  defp seek_reduce_row(range, tiles, path_indices, col) do
-    range
-    |> Enum.reduce_while({:first, []}, fn seek, {result, s_tiles} ->
-      c_tile = Day10.Utils.get_tile(tiles, col, seek)
-      {_, _, c_row, c_idx} = c_tile
-
-      cond do
-        result != :first and c_idx in path_indices ->
-          {:halt, {:path, s_tiles}}
-
-        c_row == range.last ->
+        seek_type == :row and c_row == range.last ->
           {:halt, {:oob, []}}
 
         result != :first ->
