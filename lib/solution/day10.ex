@@ -1,3 +1,5 @@
+import Topo
+
 defmodule Day10.Utils do
   @tile_types [
     :vertical,
@@ -238,19 +240,27 @@ defmodule Day10.Part2 do
       |> Enum.map(&tile_to_coords(&1, col_max, row_max))
       |> extend_with_first()
 
+    path_as_shape = %Geo.Polygon{coordinates: [path_as_coords]}
+
     coords_in_path =
       all_coords
       |> Enum.filter(fn coord ->
-        in_path = is_within_path(coord, path_as_coords)
-
-        case in_path do
-          true -> true
-          _ -> false
-        end
+        %Geo.Point{coordinates: coord} |> Topo.within?(path_as_shape)
       end)
 
-    IO.inspect(path_as_coords)
-    IO.inspect(coords_in_path)
+    # coords_in_path =
+    #   all_coords
+    #   |> Enum.filter(fn coord ->
+    #     in_path = is_within_path(coord, path_as_coords)
+
+    #     case in_path do
+    #       true -> true
+    #       _ -> false
+    #     end
+    #   end)
+
+    # IO.inspect(path_as_coords)
+    # IO.inspect(coords_in_path)
 
     length(coords_in_path)
   end
