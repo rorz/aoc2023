@@ -156,6 +156,26 @@ defmodule Day10Test do
     end)
   end
 
+  test "diff_func determines if point is in path" do
+    path = [
+      {2, 2},
+      {4, 2},
+      {4, 4},
+      {2, 4},
+      {2, 2}
+    ]
+
+    [
+      {false, {0, 0}},
+      {true, {3, 3}},
+      {false, {8, 8}}
+    ]
+    |> Enum.each(fn {expected, coords} ->
+      actual = coords |> Part2.within_path?(path)
+      assert expected == actual
+    end)
+  end
+
   test "determines if the point is in complex path" do
     looks_like = """
     -------

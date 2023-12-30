@@ -397,6 +397,42 @@ defmodule Day10.Part2 do
     (x - path_x) * (prev_path_y - path_y) -
       (y - path_y) * (prev_path_x - path_x)
   end
+
+  def within_path?({x, y}, path) do
+    # var x = point[0], y = point[1];
+
+    # var inside = false;
+    # for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    #     var xi = vs[i][0], yi = vs[i][1];
+    #     var xj = vs[j][0], yj = vs[j][1];
+
+    #     var intersect = ((yi > y) != (yj > y))
+    #         && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    #     if (intersect) inside = !inside;
+    # }
+
+    # return inside;
+
+    path_len = length(path)
+    last_idx = path_len - 1
+
+    0..last_idx
+    |> Enum.reduce({false, last_idx}, fn idx, {within?, prev_idx} ->
+      {x_curr, y_curr} = path |> Enum.at(idx)
+      {x_prev, y_prev} = path |> Enum.at(prev_idx)
+
+      intersects? =
+        y_curr > y != y_prev > y and
+          x < (x_prev - x_curr) * (y - y_curr) / (y_prev - y_curr) + x_curr
+
+      if intersects? do
+        {!within?, idx}
+      else
+        {within?, idx}
+      end
+    end)
+    |> elem(0)
+  end
 end
 
 defmodule Mix.Tasks.Day10 do
