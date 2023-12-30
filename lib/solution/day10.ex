@@ -1,4 +1,15 @@
 defmodule Day10.Utils do
+  @tile_types [
+    :vertical,
+    :horizontal,
+    :corner_top_right,
+    :corner_bottom_right,
+    :corner_bottom_left,
+    :corner_top_left,
+    :start,
+    :space
+  ]
+
   def parse_grid(input) do
     grid =
       input
@@ -26,9 +37,21 @@ defmodule Day10.Utils do
       end)
 
     {width, height} = grid |> get_dimensions()
-    flat_grid = grid |> Enum.reduce([], &(&2 ++ &1))
+    tiles = grid |> Enum.reduce([], &(&2 ++ &1))
 
-    {flat_grid, width, height}
+    start_tile =
+      tiles
+      |> Enum.find(&(&1 |> elem(0) == :start))
+
+    mod_start_tile = {
+      infer_tile_type(start_tile, tiles, width, height),
+      start_tile |> elem(1),
+      start_tile |> elem(2)
+    }
+
+    mod_tiles = replace_tile_at(mod_start_tile, tiles)
+
+    {mod_tiles, mod_start_tile, width, height}
   end
 
   def get_dimensions(lines) do
@@ -36,38 +59,6 @@ defmodule Day10.Utils do
       length(Enum.at(lines, 1)),
       length(lines)
     }
-  end
-end
-
-defmodule Day10.Part1 do
-  @tile_types [
-    :vertical,
-    :horizontal,
-    :corner_top_right,
-    :corner_bottom_right,
-    :corner_bottom_left,
-    :corner_top_left,
-    :start,
-    :space
-  ]
-
-  def solve(input) do
-    {tiles, col_max, row_max} = Day10.Utils.parse_grid(input)
-
-    start_tile =
-      tiles
-      |> Enum.find(&(&1 |> elem(0) == :start))
-
-    mod_start_tile = {
-      infer_tile_type(start_tile, tiles, col_max, row_max),
-      start_tile |> elem(1),
-      start_tile |> elem(2)
-    }
-
-    mod_tiles = replace_tile_at(mod_start_tile, tiles)
-
-    path = find_path(mod_start_tile, mod_tiles, col_max, row_max)
-    floor((length(path) + 1) / 2)
   end
 
   defp replace_tile_at(tile, tiles) do
@@ -108,7 +99,7 @@ defmodule Day10.Part1 do
     end)
   end
 
-  defp find_path(tile, tiles, col_max, row_max) do
+  def find_path(tiles, tile, col_max, row_max) do
     {type, _, _} = tile
     [random_direction | _] = type |> possible_move_types()
     find_path([tile], random_direction, tile, tiles, col_max, row_max)
@@ -204,6 +195,20 @@ defmodule Day10.Part1 do
       :start -> [:up, :right, :down, :left]
       :space -> []
     end
+  end
+end
+
+defmodule Day10.Part1 do
+  def solve(input) do
+    {tiles, start_tile, col_max, row_max} =
+      input
+      |> Day10.Utils.parse_grid()
+
+    path =
+      tiles
+      |> Day10.Utils.find_path(start_tile, col_max, row_max)
+
+    floor((length(path) + 1) / 2)
   end
 end
 

@@ -3,6 +3,7 @@ defmodule Day10Test do
 
   alias Day10.Part1, as: Part1
   alias Day10.Part2, as: Part2
+  alias Day10.Utils, as: Utils
 
   @example_simple_loop """
   -L|F7
@@ -58,7 +59,7 @@ defmodule Day10Test do
     ]
 
     Enum.each(cases, fn {{type, col, row}, expected} ->
-      actual = Part1.valid_scan_coordinates(type, col, col_max, row, row_max)
+      actual = Utils.valid_scan_coordinates(type, col, col_max, row, row_max)
       assert Enum.sort(expected) == Enum.sort(actual)
     end)
   end
