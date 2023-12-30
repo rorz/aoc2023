@@ -240,13 +240,28 @@ defmodule Day10.Part2 do
       |> Enum.map(&tile_to_coords(&1, col_max, row_max))
       |> extend_with_first()
 
-    path_as_shape = %Geo.Polygon{coordinates: [path_as_coords]}
-
-    coords_in_path =
+    all_coords_without_path_coords =
       all_coords
       |> Enum.filter(fn coord ->
-        %Geo.Point{coordinates: coord} |> Topo.within?(path_as_shape)
+        Enum.any?(path_as_coords, fn path_coord ->
+          coords_match?(path_coord, coord)
+        end)
       end)
+
+    IO.inspect(all_coords)
+    IO.inspect(all_coords_without_path_coords)
+
+    coords_in_path =
+      all_coords_without_path_coords
+      |> Enum.filter(&within_path?(&1, path_as_coords))
+
+    # path_as_shape = %Geo.Polygon{coordinates: [path_as_coords]}
+
+    # coords_in_path =
+    #   all_coords
+    #   |> Enum.filter(fn coord ->
+    #     %Geo.Point{coordinates: coord} |> Topo.within?(path_as_shape)
+    #   end)
 
     # coords_in_path =
     #   all_coords
@@ -264,6 +279,8 @@ defmodule Day10.Part2 do
 
     length(coords_in_path)
   end
+
+  defp coords_match?({x_a, y_a}, {x_b, y_b}), do: x_a == x_b and y_a == y_b
 
   defp tile_to_coords({_, col, row, _}, col_max, row_max) do
     {col_max - col, row_max - row}
