@@ -64,14 +64,28 @@ defmodule Day10.Part1 do
       start_tile |> elem(2)
     }
 
-    # IO.inspect(start_row)
-    # IO.inspect(start_col)
+    mod_tiles = replace_tile_at(mod_start_tile, tiles)
 
-    path = find_path(mod_start_tile, tiles, col_max, row_max)
-    abs(length(path) / 2)
+    path = find_path(mod_start_tile, mod_tiles, col_max, row_max)
+    floor((length(path) + 1) / 2)
   end
 
-  def infer_tile_type(tile, tiles, col_max, row_max) do
+  defp replace_tile_at(tile, tiles) do
+    {_, col, row} = tile
+
+    tiles
+    |> Enum.map(fn c_tile ->
+      {_, c_col, c_row} = c_tile
+
+      if c_col == col and c_row == row do
+        tile
+      else
+        c_tile
+      end
+    end)
+  end
+
+  defp infer_tile_type(tile, tiles, col_max, row_max) do
     target_directions =
       tile
       |> get_target_tiles(tiles, col_max, row_max)
@@ -110,17 +124,17 @@ defmodule Day10.Part1 do
         going == on_the
       end)
 
-    [to | _] =
-      target_tile
-      |> elem(0)
-      |> possible_move_types()
-      |> Enum.filter(fn type ->
-        type != get_join_direction(going)
-      end)
-
-    if coords_same?(target_tile, end_tile) do
+    if tiles_same?(target_tile, end_tile) do
       path
     else
+      [to] =
+        target_tile
+        |> elem(0)
+        |> possible_move_types()
+        |> Enum.filter(fn type ->
+          type != get_join_direction(going)
+        end)
+
       find_path(
         [target_tile | path],
         to,
@@ -132,8 +146,8 @@ defmodule Day10.Part1 do
     end
   end
 
-  def coords_same?({_, col_a, row_a}, {_, col_b, row_b}) do
-    col_a == col_b and row_a == row_b
+  defp tiles_same?({type_a, col_a, row_a}, {type_b, col_b, row_b}) do
+    type_a == type_b and col_a == col_b and row_a == row_b
   end
 
   defp get_tile(tiles, col, row) do
