@@ -1,5 +1,3 @@
-import Topo
-
 defmodule Day10.Utils do
   @tile_types [
     :vertical,
@@ -240,216 +238,20 @@ defmodule Day10.Part2 do
       |> Enum.map(&tile_to_coords(&1, col_max, row_max))
       |> extend_with_first()
 
-    all_coords_without_path_coords =
-      all_coords
-      |> Enum.filter(fn coord ->
-        Enum.any?(path_as_coords, fn path_coord ->
-          coords_match?(path_coord, coord)
-        end)
-      end)
-
-    IO.inspect(all_coords)
-    IO.inspect(all_coords_without_path_coords)
+    path_as_shape = %Geo.Polygon{coordinates: [path_as_coords]}
 
     coords_in_path =
-      all_coords_without_path_coords
-      |> Enum.filter(&within_path?(&1, path_as_coords))
-
-    # path_as_shape = %Geo.Polygon{coordinates: [path_as_coords]}
-
-    # coords_in_path =
-    #   all_coords
-    #   |> Enum.filter(fn coord ->
-    #     %Geo.Point{coordinates: coord} |> Topo.within?(path_as_shape)
-    #   end)
-
-    # coords_in_path =
-    #   all_coords
-    #   |> Enum.filter(fn coord ->
-    #     in_path = is_within_path(coord, path_as_coords)
-
-    #     case in_path do
-    #       true -> true
-    #       _ -> false
-    #     end
-    #   end)
-
-    # IO.inspect(path_as_coords)
-    # IO.inspect(coords_in_path)
+      all_coords
+      |> Enum.filter(&(%Geo.Point{coordinates: &1} |> Topo.within?(path_as_shape)))
 
     length(coords_in_path)
   end
-
-  defp coords_match?({x_a, y_a}, {x_b, y_b}), do: x_a == x_b and y_a == y_b
 
   defp tile_to_coords({_, col, row, _}, col_max, row_max) do
     {col_max - col, row_max - row}
   end
 
   defp extend_with_first(list), do: list ++ [list |> Enum.at(0)]
-
-  defp get_enclosed_tiles(path, tiles, col_max, row_max) do
-    path_indices = path |> Enum.map(&(&1 |> elem(3)))
-
-    path
-    |> Enum.reduce([], fn p_tile, e_indices ->
-      {p_type, _, _, _} = p_tile
-
-      if p_type in [:vertical, :horizontal] do
-        indices =
-          p_tile
-          |> seek_until_path_idx_or_oob(tiles, path_indices, col_max, row_max)
-
-        (indices ++ e_indices) |> Enum.uniq()
-      else
-        e_indices
-      end
-    end)
-  end
-
-  defp seek_until_path_idx_or_oob(tile, tiles, path_indices, col_max, row_max) do
-    {type, col, row, _} = tile
-
-    col_left = col..1
-    col_right = col..col_max
-    row_up = row..1
-    row_down = row..row_max
-
-    seek_ranges =
-      case type do
-        :vertical -> [{:col, col_left}, {:col, col_right}]
-        :horizontal -> [{:row, row_up}, {:row, row_down}]
-        :corner_top_right -> [{:row, row_up}, {:col, col_right}]
-        :corner_bottom_right -> [{:row, row_down}, {:col, col_right}]
-        :corner_bottom_left -> [{:row, row_down}, {:col, col_left}]
-        :corner_top_left -> [{:row, row_up}, {:col, col_left}]
-      end
-
-    [seek_a, seek_b] =
-      seek_ranges
-      |> Enum.map(fn {seek_type, range} ->
-        seek_reduce_by(range, seek_type, col, row, tiles, path_indices)
-      end)
-
-    if elem(seek_a, 0) == elem(seek_b, 0) do
-      []
-    else
-      {_, result_tiles} =
-        [seek_a, seek_b]
-        |> Enum.find(&(&1 |> elem(0) == :path))
-
-      result_tiles
-    end
-  end
-
-  defp seek_reduce_by(range, seek_type, col, row, tiles, path_indices) do
-    range
-    |> Enum.reduce_while({:first, []}, fn seek, {result, s_tiles} ->
-      c_tile =
-        case seek_type do
-          :col -> Day10.Utils.get_tile(tiles, seek, row)
-          :row -> Day10.Utils.get_tile(tiles, col, seek)
-        end
-
-      {_, c_col, c_row, c_idx} = c_tile
-
-      cond do
-        result != :first and c_idx in path_indices ->
-          {:halt, {:path, s_tiles}}
-
-        seek_type == :col and c_col == range.last ->
-          {:halt, {:oob, []}}
-
-        seek_type == :row and c_row == range.last ->
-          {:halt, {:oob, []}}
-
-        result != :first ->
-          {:cont, {:unknown, [c_tile | s_tiles]}}
-
-        result == :first ->
-          {:cont, {:unknown, s_tiles}}
-      end
-    end)
-  end
-
-  def is_within_path({x, y}, path) do
-    limit = length(path) - 1
-
-    {result, _} =
-      0..limit
-      |> Enum.reduce_while(
-        {false, limit - 1},
-        fn idx, {in_path, last_idx} ->
-          {path_x, path_y} = path |> Enum.at(idx)
-          {prev_path_x, prev_path_y} = path |> Enum.at(last_idx)
-
-          cond do
-            x == path_x and y == path_y ->
-              {:halt, {:corner, idx}}
-
-            path_y > y != prev_path_y > y ->
-              slope = get_slope(x, path_x, prev_path_x, y, path_y, prev_path_y)
-
-              cond do
-                slope == 0 ->
-                  {:halt, {:on_line, idx}}
-
-                slope < 0 != prev_path_y < path_y ->
-                  {:cont, {!in_path, idx}}
-
-                true ->
-                  {:cont, {in_path, idx}}
-              end
-
-            true ->
-              {:cont, {in_path, idx}}
-          end
-        end
-      )
-
-    result
-  end
-
-  defp get_slope(x, path_x, prev_path_x, y, path_y, prev_path_y) do
-    (x - path_x) * (prev_path_y - path_y) -
-      (y - path_y) * (prev_path_x - path_x)
-  end
-
-  def within_path?({x, y}, path) do
-    # var x = point[0], y = point[1];
-
-    # var inside = false;
-    # for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-    #     var xi = vs[i][0], yi = vs[i][1];
-    #     var xj = vs[j][0], yj = vs[j][1];
-
-    #     var intersect = ((yi > y) != (yj > y))
-    #         && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-    #     if (intersect) inside = !inside;
-    # }
-
-    # return inside;
-
-    path_len = length(path)
-    last_idx = path_len - 1
-
-    0..last_idx
-    |> Enum.reduce({false, last_idx}, fn idx, {within?, prev_idx} ->
-      {x_curr, y_curr} = path |> Enum.at(idx)
-      {x_prev, y_prev} = path |> Enum.at(prev_idx)
-
-      intersects? =
-        y_curr > y != y_prev > y and
-          x < (x_prev - x_curr) * (y - y_curr) / (y_prev - y_curr) + x_curr
-
-      if intersects? do
-        {!within?, idx}
-      else
-        {within?, idx}
-      end
-    end)
-    |> elem(0)
-  end
 end
 
 defmodule Mix.Tasks.Day10 do
