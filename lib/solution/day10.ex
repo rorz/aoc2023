@@ -214,7 +214,19 @@ end
 
 defmodule Day10.Part2 do
   def solve(input) do
-    nil
+    {tiles, start_tile, col_max, row_max} =
+      input
+      |> Day10.Utils.parse_grid()
+
+    path =
+      tiles
+      |> Day10.Utils.find_path(start_tile, col_max, row_max)
+
+    length(get_enclosed_tiles(path))
+  end
+
+  defp get_enclosed_tiles(path) do
+    []
   end
 end
 
