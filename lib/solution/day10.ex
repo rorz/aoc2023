@@ -258,54 +258,36 @@ defmodule Day10.Part2 do
   defp seek_until_path_idx_or_oob(tile, tiles, path_indices, col_max, row_max) do
     {type, col, row, _} = tile
 
-    case type do
-      :vertical ->
-        seek_min =
-          col..1
-          |> seek_reduce_by(:col, row, tiles, path_indices)
+    seek_ranges =
+      case type do
+        :vertical -> [{:col, col..1}, {:col, col..col_max}]
+        :horizontal -> [{:row, row..1}, {:row, row..row_max}]
+      end
 
-        seek_max =
-          col..col_max
-          |> seek_reduce_by(:col, row, tiles, path_indices)
+    [seek_a, seek_b] =
+      seek_ranges
+      |> Enum.map(fn {seek_type, range} ->
+        seek_reduce_by(range, seek_type, col, row, tiles, path_indices)
+      end)
 
-        if elem(seek_min, 0) == elem(seek_max, 0) do
-          []
-        else
-          {_, result_tiles} =
-            [seek_min, seek_max]
-            |> Enum.find(&(&1 |> elem(0) == :path))
+    if elem(seek_a, 0) == elem(seek_b, 0) do
+      []
+    else
+      {_, result_tiles} =
+        [seek_a, seek_b]
+        |> Enum.find(&(&1 |> elem(0) == :path))
 
-          result_tiles
-        end
-
-      :horizontal ->
-        seek_min =
-          row..1
-          |> seek_reduce_by(:row, col, tiles, path_indices)
-
-        seek_max =
-          row..row_max
-          |> seek_reduce_by(:row, col, tiles, path_indices)
-
-        if elem(seek_min, 0) == elem(seek_max, 0) do
-          []
-        else
-          {_, result_tiles} =
-            [seek_min, seek_max]
-            |> Enum.find(&(&1 |> elem(0) == :path))
-
-          result_tiles
-        end
+      result_tiles
     end
   end
 
-  defp seek_reduce_by(range, seek_type, orth, tiles, path_indices) do
+  defp seek_reduce_by(range, seek_type, col, row, tiles, path_indices) do
     range
     |> Enum.reduce_while({:first, []}, fn seek, {result, s_tiles} ->
       c_tile =
         case seek_type do
-          :col -> Day10.Utils.get_tile(tiles, seek, orth)
-          :row -> Day10.Utils.get_tile(tiles, orth, seek)
+          :col -> Day10.Utils.get_tile(tiles, seek, row)
+          :row -> Day10.Utils.get_tile(tiles, col, seek)
         end
 
       {_, c_col, c_row, c_idx} = c_tile
