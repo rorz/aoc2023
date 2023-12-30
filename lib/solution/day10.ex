@@ -232,6 +232,8 @@ defmodule Day10.Part2 do
     enclosed_tiles =
       path |> get_enclosed_tiles(tiles, col_max, row_max)
 
+    IO.inspect(enclosed_tiles)
+
     length(enclosed_tiles)
     # length(get_enclosed_tiles(path))
   end
@@ -258,10 +260,19 @@ defmodule Day10.Part2 do
   defp seek_until_path_idx_or_oob(tile, tiles, path_indices, col_max, row_max) do
     {type, col, row, _} = tile
 
+    col_left = col..1
+    col_right = col..col_max
+    row_up = row..1
+    row_down = row..row_max
+
     seek_ranges =
       case type do
-        :vertical -> [{:col, col..1}, {:col, col..col_max}]
-        :horizontal -> [{:row, row..1}, {:row, row..row_max}]
+        :vertical -> [{:col, col_left}, {:col, col_right}]
+        :horizontal -> [{:row, row_up}, {:row, row_down}]
+        :corner_top_right -> [{:row, row_up}, {:col, col_right}]
+        :corner_bottom_right -> [{:row, row_down}, {:col, col_right}]
+        :corner_bottom_left -> [{:row, row_down}, {:col, col_left}]
+        :corner_top_left -> [{:row, row_up}, {:col, col_left}]
       end
 
     [seek_a, seek_b] =
@@ -309,6 +320,51 @@ defmodule Day10.Part2 do
           {:cont, {:unknown, s_tiles}}
       end
     end)
+  end
+
+  def within_path?(x, y, path) do
+    limit = length(path) - 1
+
+    {result, _} =
+      0..limit
+      |> Enum.reduce_while(
+        {false, limit - 1},
+        fn idx, {in_path, last_idx} ->
+          {path_x, path_y} = path |> Enum.at(idx)
+          {prev_path_x, prev_path_y} = path |> Enum.at(last_idx)
+
+          cond do
+            x == path_x and y == path_y ->
+              # point is a corner
+              {:halt, {true, idx}}
+
+            path_y > y != prev_path_y > y ->
+              slope = get_slope(x, path_x, prev_path_x, y, path_y, prev_path_y)
+
+              cond do
+                slope == 0 ->
+                  # point is on the line itself
+                  {:halt, {true, idx}}
+
+                slope < 0 != prev_path_y < path_y ->
+                  {:cont, {!in_path, idx}}
+
+                true ->
+                  {:cont, {in_path, idx}}
+              end
+
+            true ->
+              {:cont, {in_path, idx}}
+          end
+        end
+      )
+
+    result
+  end
+
+  defp get_slope(x, path_x, prev_path_x, y, path_y, prev_path_y) do
+    (x - path_x) * (prev_path_y - path_y) -
+      (y - path_y) * (prev_path_x - path_x)
   end
 end
 

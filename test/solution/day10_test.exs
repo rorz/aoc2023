@@ -133,4 +133,26 @@ defmodule Day10Test do
   test "solves the fourth example input for part 2" do
     assert Part2.solve(@example_enclosed_4) == 10
   end
+
+  @tag temp: true
+  test "determines if point is in path" do
+    path = [
+      {2, 2},
+      {4, 2},
+      {4, 4},
+      {2, 4}
+    ]
+
+    [
+      {false, {0, 0}},
+      {true, {2, 2}},
+      {true, {2, 3}},
+      {true, {3, 3}}
+      # {false, {8, 8}}
+    ]
+    |> Enum.each(fn {expected, {col, row}} ->
+      actual = Part2.within_path?(col, row, path)
+      assert expected == actual
+    end)
+  end
 end
