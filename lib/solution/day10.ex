@@ -40,6 +40,17 @@ defmodule Day10.Utils do
 end
 
 defmodule Day10.Part1 do
+  @tile_types [
+    :vertical,
+    :horizontal,
+    :corner_top_right,
+    :corner_bottom_right,
+    :corner_bottom_left,
+    :corner_top_left,
+    :start,
+    :space
+  ]
+
   def solve(input) do
     {tiles, col_max, row_max} = Day10.Utils.parse_grid(input)
 
@@ -47,30 +58,82 @@ defmodule Day10.Part1 do
       tiles
       |> Enum.find(&(&1 |> elem(0) == :start))
 
+    mod_start_tile = {
+      infer_tile_type(start_tile, tiles, col_max, row_max),
+      start_tile |> elem(1),
+      start_tile |> elem(2)
+    }
+
     # IO.inspect(start_row)
     # IO.inspect(start_col)
 
-    path = find_path(start_tile, tiles, col_max, row_max, [])
-
-    IO.puts("got path")
-    IO.inspect(path)
+    path = find_path(mod_start_tile, tiles, col_max, row_max)
+    abs(length(path) / 2)
   end
 
-  defp find_path(tile, tiles, col_max, row_max, path) do
-    {type, col, row} = tile
+  def infer_tile_type(tile, tiles, col_max, row_max) do
+    target_directions =
+      tile
+      |> get_target_tiles(tiles, col_max, row_max)
+      |> Enum.map(fn {direction, _} -> direction end)
 
-    target_tiles =
-      type
-      |> valid_scan_coordinates(col, col_max, row, row_max)
-      |> Enum.map(fn {direction, {target_col, target_row}} ->
-        target_tile = get_tile(tiles, target_col, target_row)
-        {direction, target_tile}
-      end)
-      |> Enum.filter(fn {direction, {type, _, _}} ->
-        can_move?(direction, type)
+    Enum.find(@tile_types, fn type ->
+      Enum.sort(target_directions) == Enum.sort(possible_move_types(type))
+    end)
+  end
+
+  defp get_target_tiles({type, col, row}, tiles, col_max, row_max) do
+    type
+    |> valid_scan_coordinates(col, col_max, row, row_max)
+    |> Enum.map(fn {direction, {target_col, target_row}} ->
+      target_tile = get_tile(tiles, target_col, target_row)
+      {direction, target_tile}
+    end)
+    |> Enum.filter(fn {direction, {type, _, _}} ->
+      can_move?(direction, type)
+    end)
+  end
+
+  defp find_path(tile, tiles, col_max, row_max) do
+    {type, _, _} = tile
+    [random_direction | _] = type |> possible_move_types()
+    find_path([tile], random_direction, tile, tiles, col_max, row_max)
+  end
+
+  defp find_path(path, going, end_tile, tiles, col_max, row_max) do
+    [current_tile | _] = path
+
+    [{_, target_tile}] =
+      current_tile
+      |> get_target_tiles(tiles, col_max, row_max)
+      |> Enum.filter(fn {on_the, _} ->
+        going == on_the
       end)
 
-    # check if starting tile (actually might not work because it needs to be the same type that it started with)
+    [to | _] =
+      target_tile
+      |> elem(0)
+      |> possible_move_types()
+      |> Enum.filter(fn type ->
+        type != get_join_direction(going)
+      end)
+
+    if coords_same?(target_tile, end_tile) do
+      path
+    else
+      find_path(
+        [target_tile | path],
+        to,
+        end_tile,
+        tiles,
+        col_max,
+        row_max
+      )
+    end
+  end
+
+  def coords_same?({_, col_a, row_a}, {_, col_b, row_b}) do
+    col_a == col_b and row_a == row_b
   end
 
   defp get_tile(tiles, col, row) do
@@ -83,7 +146,7 @@ defmodule Day10.Part1 do
       |> possible_move_types()
 
     possible_moves
-    |> Enum.map(&valid_join_direction/1)
+    |> Enum.map(&get_join_direction/1)
     |> Enum.any?(&(&1 == direction))
   end
 
@@ -101,7 +164,7 @@ defmodule Day10.Part1 do
     |> Enum.filter(&coordinates_valid?(&1 |> elem(1), col_max, row_max))
   end
 
-  defp valid_join_direction(direction) do
+  defp get_join_direction(direction) do
     case direction do
       :up -> :down
       :right -> :left
