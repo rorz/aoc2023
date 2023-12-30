@@ -229,14 +229,37 @@ defmodule Day10.Part2 do
       tiles
       |> Day10.Utils.find_path(start_tile, col_max, row_max)
 
-    enclosed_tiles =
-      path |> get_enclosed_tiles(tiles, col_max, row_max)
+    all_coords =
+      tiles
+      |> Enum.map(&tile_to_coords(&1, col_max, row_max))
 
-    IO.inspect(enclosed_tiles)
+    path_as_coords =
+      path
+      |> Enum.map(&tile_to_coords(&1, col_max, row_max))
+      |> extend_with_first()
 
-    length(enclosed_tiles)
-    # length(get_enclosed_tiles(path))
+    coords_in_path =
+      all_coords
+      |> Enum.filter(fn coord ->
+        in_path = is_within_path(coord, path_as_coords)
+
+        case in_path do
+          true -> true
+          _ -> false
+        end
+      end)
+
+    IO.inspect(path_as_coords)
+    IO.inspect(coords_in_path)
+
+    length(coords_in_path)
   end
+
+  defp tile_to_coords({_, col, row, _}, col_max, row_max) do
+    {col_max - col, row_max - row}
+  end
+
+  defp extend_with_first(list), do: list ++ [list |> Enum.at(0)]
 
   defp get_enclosed_tiles(path, tiles, col_max, row_max) do
     path_indices = path |> Enum.map(&(&1 |> elem(3)))
@@ -322,7 +345,7 @@ defmodule Day10.Part2 do
     end)
   end
 
-  def within_path?(x, y, path) do
+  def is_within_path({x, y}, path) do
     limit = length(path) - 1
 
     {result, _} =
