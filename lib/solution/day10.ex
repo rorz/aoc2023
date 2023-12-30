@@ -37,7 +37,12 @@ defmodule Day10.Utils do
       end)
 
     {width, height} = grid |> get_dimensions()
-    tiles = grid |> Enum.reduce([], &(&2 ++ &1))
+
+    tiles =
+      grid
+      |> Enum.reduce([], &(&2 ++ &1))
+      |> Enum.with_index()
+      |> Enum.map(fn {tile_def, idx} -> tile_def |> Tuple.append(idx) end)
 
     start_tile =
       tiles
@@ -46,10 +51,12 @@ defmodule Day10.Utils do
     mod_start_tile = {
       infer_tile_type(start_tile, tiles, width, height),
       start_tile |> elem(1),
-      start_tile |> elem(2)
+      start_tile |> elem(2),
+      start_tile |> elem(3)
     }
 
-    mod_tiles = replace_tile_at(mod_start_tile, tiles)
+    mod_tiles =
+      replace_tile_at(mod_start_tile, tiles)
 
     {mod_tiles, mod_start_tile, width, height}
   end
@@ -62,11 +69,11 @@ defmodule Day10.Utils do
   end
 
   defp replace_tile_at(tile, tiles) do
-    {_, col, row} = tile
+    {_, col, row, _} = tile
 
     tiles
     |> Enum.map(fn c_tile ->
-      {_, c_col, c_row} = c_tile
+      {_, c_col, c_row, _} = c_tile
 
       if c_col == col and c_row == row do
         tile
@@ -87,20 +94,20 @@ defmodule Day10.Utils do
     end)
   end
 
-  defp get_target_tiles({type, col, row}, tiles, col_max, row_max) do
+  defp get_target_tiles({type, col, row, _}, tiles, col_max, row_max) do
     type
     |> valid_scan_coordinates(col, col_max, row, row_max)
     |> Enum.map(fn {direction, {target_col, target_row}} ->
       target_tile = get_tile(tiles, target_col, target_row)
       {direction, target_tile}
     end)
-    |> Enum.filter(fn {direction, {type, _, _}} ->
+    |> Enum.filter(fn {direction, {type, _, _, _}} ->
       can_move?(direction, type)
     end)
   end
 
   def find_path(tiles, tile, col_max, row_max) do
-    {type, _, _} = tile
+    {type, _, _, _} = tile
     [random_direction | _] = type |> possible_move_types()
     find_path([tile], random_direction, tile, tiles, col_max, row_max)
   end
@@ -137,11 +144,11 @@ defmodule Day10.Utils do
     end
   end
 
-  defp tiles_same?({type_a, col_a, row_a}, {type_b, col_b, row_b}) do
-    type_a == type_b and col_a == col_b and row_a == row_b
+  defp tiles_same?({_, col_a, row_a, _}, {_, col_b, row_b, _}) do
+    col_a == col_b and row_a == row_b
   end
 
-  defp get_tile(tiles, col, row) do
+  def get_tile(tiles, col, row) do
     tiles |> Enum.find(&(&1 |> elem(1) == col and &1 |> elem(2) == row))
   end
 
@@ -222,11 +229,118 @@ defmodule Day10.Part2 do
       tiles
       |> Day10.Utils.find_path(start_tile, col_max, row_max)
 
-    length(get_enclosed_tiles(path))
+    enclosed_tiles =
+      path |> get_enclosed_tiles(tiles, col_max, row_max)
+
+    length(enclosed_tiles)
+    # length(get_enclosed_tiles(path))
   end
 
-  defp get_enclosed_tiles(path) do
-    []
+  defp get_enclosed_tiles(path, tiles, col_max, row_max) do
+    path_indices = path |> Enum.map(&(&1 |> elem(3)))
+
+    path
+    |> Enum.reduce([], fn p_tile, e_indices ->
+      {p_type, _, _, _} = p_tile
+
+      if p_type in [:vertical, :horizontal] do
+        indices =
+          p_tile
+          |> seek_until_path_idx_or_oob(tiles, path_indices, col_max, row_max)
+
+        (indices ++ e_indices) |> Enum.uniq()
+      else
+        e_indices
+      end
+    end)
+  end
+
+  defp seek_until_path_idx_or_oob(tile, tiles, path_indices, col_max, row_max) do
+    {type, col, row, _} = tile
+
+    case type do
+      :vertical ->
+        seek_min =
+          col..1
+          |> seek_reduce_col(tiles, path_indices, row)
+
+        seek_max =
+          col..col_max
+          |> seek_reduce_col(tiles, path_indices, row)
+
+        if elem(seek_min, 0) == elem(seek_max, 0) do
+          []
+        else
+          {_, result_tiles} =
+            [seek_min, seek_max]
+            |> Enum.find(&(&1 |> elem(0) == :path))
+
+          result_tiles
+        end
+
+      :horizontal ->
+        seek_min =
+          row..1
+          |> seek_reduce_row(tiles, path_indices, col)
+
+        seek_max =
+          row..row_max
+          |> seek_reduce_row(tiles, path_indices, col)
+
+        if elem(seek_min, 0) == elem(seek_max, 0) do
+          []
+        else
+          {_, result_tiles} =
+            [seek_min, seek_max]
+            |> Enum.find(&(&1 |> elem(0) == :path))
+
+          result_tiles
+        end
+    end
+  end
+
+  defp seek_reduce_col(range, tiles, path_indices, row) do
+    range
+    |> Enum.reduce_while({:first, []}, fn seek, {result, s_tiles} ->
+      c_tile = Day10.Utils.get_tile(tiles, seek, row)
+      {_, c_col, _, c_idx} = c_tile
+
+      cond do
+        result != :first and c_idx in path_indices ->
+          {:halt, {:path, s_tiles}}
+
+        c_col == range.last ->
+          {:halt, {:oob, []}}
+
+        result != :first ->
+          {:cont, {:unknown, [c_tile | s_tiles]}}
+
+        result == :first ->
+          {:cont, {:unknown, s_tiles}}
+      end
+    end)
+  end
+
+  defp seek_reduce_row(range, tiles, path_indices, col) do
+    range
+    |> Enum.reduce_while({:first, []}, fn seek, {result, s_tiles} ->
+      c_tile = Day10.Utils.get_tile(tiles, col, seek)
+      {_, _, c_row, c_idx} = c_tile
+
+      cond do
+        result != :first and c_idx in path_indices ->
+          {:halt, {:path, s_tiles}}
+
+        c_row == range.last ->
+          {:halt, {:oob, []}}
+
+        result != :first ->
+          {:cont, {:unknown, [c_tile | s_tiles]}}
+
+        result == :first ->
+          {:cont, {:unknown, s_tiles}}
+      end
+    end)
   end
 end
 
