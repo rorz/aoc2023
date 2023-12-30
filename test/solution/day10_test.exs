@@ -22,12 +22,45 @@ defmodule Day10Test do
 
   @tag example: true
   test "solves the example simple loop input for part 1" do
-    assert Part1.solve(@example) == 4
+    assert Part1.solve(@example_simple_loop) == 4
   end
 
   @tag example: true
   test "solves the example complex loop input for part 1" do
-    assert Part1.solve(@example) == 8
+    assert Part1.solve(@example_complex_loop) == 8
+  end
+
+  test "gets valid scan coordinates for example values" do
+    row_max = 4
+    col_max = 4
+
+    cases = [
+      {
+        {:vertical, 2, 2},
+        [up: {2, 1}, down: {2, 3}]
+      },
+      {
+        {:vertical, 1, 1},
+        [down: {1, 2}]
+      },
+      {
+        {:horizontal, 2, 2},
+        [left: {1, 2}, right: {3, 2}]
+      },
+      {
+        {:horizontal, 4, 1},
+        [left: {3, 1}]
+      },
+      {
+        {:corner_bottom_right, 4, 4},
+        [up: {4, 3}, left: {3, 4}]
+      }
+    ]
+
+    Enum.each(cases, fn {{type, col, row}, expected} ->
+      actual = Part1.valid_scan_coordinates(type, col, col_max, row, row_max)
+      assert Enum.sort(expected) == Enum.sort(actual)
+    end)
   end
 
   @tag :skip
