@@ -335,16 +335,14 @@ defmodule Day10.Part2 do
 
           cond do
             x == path_x and y == path_y ->
-              # point is a corner
-              {:halt, {true, idx}}
+              {:halt, {:corner, idx}}
 
             path_y > y != prev_path_y > y ->
               slope = get_slope(x, path_x, prev_path_x, y, path_y, prev_path_y)
 
               cond do
                 slope == 0 ->
-                  # point is on the line itself
-                  {:halt, {true, idx}}
+                  {:halt, {:on_line, idx}}
 
                 slope < 0 != prev_path_y < path_y ->
                   {:cont, {!in_path, idx}}

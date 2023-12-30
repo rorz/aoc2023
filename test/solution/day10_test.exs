@@ -140,15 +140,16 @@ defmodule Day10Test do
       {2, 2},
       {4, 2},
       {4, 4},
-      {2, 4}
+      {2, 4},
+      {2, 2}
     ]
 
     [
       {false, {0, 0}},
-      {true, {2, 2}},
-      {true, {2, 3}},
-      {true, {3, 3}}
-      # {false, {8, 8}}
+      {:corner, {2, 2}},
+      {:on_line, {2, 3}},
+      {true, {3, 3}},
+      {false, {8, 8}}
     ]
     |> Enum.each(fn {expected, {col, row}} ->
       actual = Part2.within_path?(col, row, path)
