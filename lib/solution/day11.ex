@@ -9,15 +9,18 @@ defmodule Day11.Utils do
     [empty_row_indices, empty_col_indices] =
       [rows, cols] |> Enum.map(&get_empty_indices/1)
 
-    expanded =
-      rows
-      |> expand(empty_row_indices, gap_length)
-      |> Enum.map(&expand(&1, empty_col_indices, gap_length))
+    IO.inspect(empty_row_indices)
+    IO.inspect(empty_col_indices)
 
-    x_max = last_idx_of_first_row(expanded)
+    # expanded =
+    #   rows
+    #   |> expand(empty_row_indices, gap_length)
+    #   |> Enum.map(&expand(&1, empty_col_indices, gap_length))
+
+    x_max = last_idx_of_first_row(rows)
 
     flattened_with_coords =
-      expanded
+      rows
       |> List.flatten()
       |> Enum.with_index()
       |> Enum.map(fn {char, idx} ->
@@ -40,9 +43,53 @@ defmodule Day11.Utils do
 
     distances =
       permutations
-      |> Enum.map(&get_path_dist/1)
+      |> Enum.map(fn coords ->
+        dist = get_path_dist(coords)
+
+        {x_ext, y_ext} =
+          path_ext_lengths(coords, empty_col_indices, empty_row_indices, gap_length)
+
+        dist + x_ext + y_ext
+        # IO.inspect({coords, x_ext, y_ext, dist})
+        # IO.inspect(coords)
+        # extended_path = extend_path(coords, empty_col_indices, empty_row_indices, gap_length)
+        # # IO.inspect(extended_path)
+        # dist = extended_path |> get_path_dist()
+        # # IO.inspect(dist)
+        # dist
+        # &(extend_path(
+        #     &1,
+        #     empty_col_indices,
+        #     empty_row_indices,
+        #     gap_length
+        #   )
+        #   |> get_path_dist())
+      end)
 
     distances |> Enum.sum()
+  end
+
+  defp path_ext_lengths([{x_a, y_a}, {x_b, y_b}], x_exts, y_exts, gap) do
+    x_m = count_points_between(x_a, x_b, x_exts) * (gap - 1)
+    y_m = count_points_between(y_a, y_b, y_exts) * (gap - 1)
+    {x_m, y_m}
+  end
+
+  defp sort_num(a, b) do
+    cond do
+      a > b -> {b, a}
+      b > a -> {a, b}
+      true -> {a, b}
+    end
+  end
+
+  defp count_points_between(a, b, points) do
+    {lower, upper} = sort_num(a, b)
+
+    points
+    |> Enum.count(fn point ->
+      point > lower and point < upper
+    end)
   end
 
   defp get_path_dist([{x_a, y_a}, {x_b, y_b}]) do
@@ -133,7 +180,7 @@ end
 
 defmodule Day11.Part2 do
   def solve(input) do
-    nil
+    Day11.Utils.solve(input, 1_000_000)
   end
 end
 
