@@ -1,7 +1,128 @@
 defmodule Day11.Part1 do
   def solve(input) do
-    nil
+    rows =
+      input |> to_rows()
+
+    cols =
+      rows |> to_columns()
+
+    [empty_row_indices, empty_col_indices] =
+      [rows, cols] |> Enum.map(&get_empty_indices/1)
+
+    expanded =
+      rows
+      |> expand(empty_row_indices)
+      |> Enum.map(&expand(&1, empty_col_indices))
+
+    x_max = last_idx_of_first_row(expanded)
+
+    flattened_with_coords =
+      expanded
+      |> List.flatten()
+      |> Enum.with_index()
+      |> Enum.map(fn {char, idx} ->
+        {char, get_coords(idx, x_max)}
+      end)
+
+    galaxies =
+      flattened_with_coords
+      |> Enum.filter(fn {char, _} ->
+        char == "#"
+      end)
+
+    galaxy_coords =
+      galaxies
+      |> Enum.map(fn {_, coords} ->
+        coords
+      end)
+
+    permutations = get_permutations(galaxy_coords)
+
+    distances =
+      permutations
+      |> Enum.map(&get_path_dist/1)
+
+    distances |> Enum.sum()
   end
+
+  defp get_path_dist([{x_a, y_a}, {x_b, y_b}]) do
+    abs(x_a - x_b) + abs(y_a - y_b)
+  end
+
+  defp get_permutations(coords_list) do
+    coord_strings = coords_list |> Enum.map(&to_coord_string/1)
+
+    coords_list
+    |> Enum.reduce([], fn coord, acc ->
+      coord_string = to_coord_string(coord)
+
+      combined_strings =
+        coord_strings
+        |> Enum.filter(fn c_str ->
+          c_str != coord_string
+        end)
+        |> Enum.map(fn c_str ->
+          [c_str, coord_string]
+          |> Enum.sort()
+          |> Enum.join("_")
+        end)
+
+      acc ++ [combined_strings]
+    end)
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.map(fn comb_str ->
+      comb_str
+      |> String.split("_")
+      |> Enum.map(&from_coord_string/1)
+    end)
+  end
+
+  defp to_coord_string({x, y}), do: "#{x}-#{y}"
+
+  defp from_coord_string(str),
+    do: str |> String.split("-") |> Enum.map(&Utils.to_int/1) |> List.to_tuple()
+
+  defp get_coords(idx, x_max),
+    do: {
+      rem(idx, x_max + 1),
+      floor(idx / (x_max + 1))
+    }
+
+  defp expand(list, indices) do
+    list
+    |> Enum.with_index()
+    |> Enum.reduce([], fn {el, idx}, acc ->
+      acc ++
+        List.duplicate(
+          el,
+          if(idx in indices, do: 2, else: 1)
+        )
+    end)
+  end
+
+  defp get_empty_indices(dim),
+    do:
+      dim
+      |> Enum.with_index()
+      |> Enum.filter(&(&1 |> elem(0) |> lacks?("#")))
+      |> Enum.map(&(&1 |> elem(1)))
+
+  defp lacks?(list, char), do: list |> Enum.all?(&(&1 != char))
+
+  defp to_rows(input),
+    do:
+      input
+      |> Utils.split_into_lines()
+      |> Enum.map(&String.graphemes/1)
+
+  defp to_columns(rows),
+    do:
+      0..last_idx_of_first_row(rows)
+      |> Enum.map(&get_at_col(&1, rows))
+
+  defp get_at_col(idx, rows), do: rows |> Enum.map(&Enum.at(&1, idx))
+  defp last_idx_of_first_row(rows), do: length(rows |> List.first()) - 1
 end
 
 defmodule Day11.Part2 do
