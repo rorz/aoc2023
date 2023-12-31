@@ -1,5 +1,5 @@
-defmodule Day11.Part1 do
-  def solve(input) do
+defmodule Day11.Utils do
+  def solve(input, gap_length) do
     rows =
       input |> to_rows()
 
@@ -11,8 +11,8 @@ defmodule Day11.Part1 do
 
     expanded =
       rows
-      |> expand(empty_row_indices)
-      |> Enum.map(&expand(&1, empty_col_indices))
+      |> expand(empty_row_indices, gap_length)
+      |> Enum.map(&expand(&1, empty_col_indices, gap_length))
 
     x_max = last_idx_of_first_row(expanded)
 
@@ -89,14 +89,14 @@ defmodule Day11.Part1 do
       floor(idx / (x_max + 1))
     }
 
-  defp expand(list, indices) do
+  defp expand(list, indices, gap_length) do
     list
     |> Enum.with_index()
     |> Enum.reduce([], fn {el, idx}, acc ->
       acc ++
         List.duplicate(
           el,
-          if(idx in indices, do: 2, else: 1)
+          if(idx in indices, do: gap_length, else: 1)
         )
     end)
   end
@@ -123,6 +123,12 @@ defmodule Day11.Part1 do
 
   defp get_at_col(idx, rows), do: rows |> Enum.map(&Enum.at(&1, idx))
   defp last_idx_of_first_row(rows), do: length(rows |> List.first()) - 1
+end
+
+defmodule Day11.Part1 do
+  def solve(input) do
+    Day11.Utils.solve(input, 2)
+  end
 end
 
 defmodule Day11.Part2 do

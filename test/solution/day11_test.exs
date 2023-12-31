@@ -1,8 +1,7 @@
 defmodule Day11Test do
   use ExUnit.Case
 
-  alias Day11.Part1, as: Part1
-  alias Day11.Part2, as: Part2
+  alias Day11.Utils, as: Utils
 
   @example """
   ...#......
@@ -18,13 +17,17 @@ defmodule Day11Test do
   """
 
   @tag example: true
-  test "solves the example input for part 1" do
-    assert Part1.solve(@example) == 374
+  test "solves the example input with a gap length of 2" do
+    assert Utils.solve(@example, 2) == 374
   end
 
-  @tag :skip
   @tag example: true
-  test "solves the example input for part 2" do
-    assert Part2.solve(@example) == nil
+  test "solves the example input with a gap length of 10" do
+    assert Utils.solve(@example, 10) == 1030
+  end
+
+  @tag example: true
+  test "solves the example input with a gap length of 100" do
+    assert Utils.solve(@example, 100) == 8410
   end
 end
