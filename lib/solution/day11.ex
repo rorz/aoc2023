@@ -9,14 +9,6 @@ defmodule Day11.Utils do
     [empty_row_indices, empty_col_indices] =
       [rows, cols] |> Enum.map(&get_empty_indices/1)
 
-    IO.inspect(empty_row_indices)
-    IO.inspect(empty_col_indices)
-
-    # expanded =
-    #   rows
-    #   |> expand(empty_row_indices, gap_length)
-    #   |> Enum.map(&expand(&1, empty_col_indices, gap_length))
-
     x_max = last_idx_of_first_row(rows)
 
     flattened_with_coords =
@@ -39,34 +31,16 @@ defmodule Day11.Utils do
         coords
       end)
 
-    permutations = get_permutations(galaxy_coords)
+    get_permutations(galaxy_coords)
+    |> Enum.map(fn coords ->
+      dist = get_path_dist(coords)
 
-    distances =
-      permutations
-      |> Enum.map(fn coords ->
-        dist = get_path_dist(coords)
+      {x_ext, y_ext} =
+        path_ext_lengths(coords, empty_col_indices, empty_row_indices, gap_length)
 
-        {x_ext, y_ext} =
-          path_ext_lengths(coords, empty_col_indices, empty_row_indices, gap_length)
-
-        dist + x_ext + y_ext
-        # IO.inspect({coords, x_ext, y_ext, dist})
-        # IO.inspect(coords)
-        # extended_path = extend_path(coords, empty_col_indices, empty_row_indices, gap_length)
-        # # IO.inspect(extended_path)
-        # dist = extended_path |> get_path_dist()
-        # # IO.inspect(dist)
-        # dist
-        # &(extend_path(
-        #     &1,
-        #     empty_col_indices,
-        #     empty_row_indices,
-        #     gap_length
-        #   )
-        #   |> get_path_dist())
-      end)
-
-    distances |> Enum.sum()
+      dist + x_ext + y_ext
+    end)
+    |> Enum.sum()
   end
 
   defp path_ext_lengths([{x_a, y_a}, {x_b, y_b}], x_exts, y_exts, gap) do
@@ -135,18 +109,6 @@ defmodule Day11.Utils do
       rem(idx, x_max + 1),
       floor(idx / (x_max + 1))
     }
-
-  defp expand(list, indices, gap_length) do
-    list
-    |> Enum.with_index()
-    |> Enum.reduce([], fn {el, idx}, acc ->
-      acc ++
-        List.duplicate(
-          el,
-          if(idx in indices, do: gap_length, else: 1)
-        )
-    end)
-  end
 
   defp get_empty_indices(dim),
     do:
