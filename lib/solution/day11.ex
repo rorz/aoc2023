@@ -1,64 +1,34 @@
 defmodule Day11.Utils do
   def solve(input, gap_length) do
-    rows =
-      input |> to_rows()
+    rows = input |> to_rows()
+    {x_max, empty_x, empty_y} = parse_rows(rows)
 
-    cols =
-      rows |> to_columns()
-
-    [empty_row_indices, empty_col_indices] =
-      [rows, cols] |> Enum.map(&get_empty_indices/1)
-
-    x_max = last_idx_of_first_row(rows)
-
-    flattened_with_coords =
-      rows
-      |> List.flatten()
-      |> Enum.with_index()
-      |> Enum.map(fn {char, idx} ->
-        {char, get_coords(idx, x_max)}
-      end)
-
-    galaxies =
-      flattened_with_coords
-      |> Enum.filter(fn {char, _} ->
-        char == "#"
-      end)
-
-    galaxy_coords =
-      galaxies
-      |> Enum.map(fn {_, coords} ->
-        coords
-      end)
-
-    get_permutations(galaxy_coords)
-    |> Enum.map(fn coords ->
-      dist = get_path_dist(coords)
-
-      {x_ext, y_ext} =
-        path_ext_lengths(coords, empty_col_indices, empty_row_indices, gap_length)
-
-      dist + x_ext + y_ext
-    end)
+    rows
+    |> List.flatten()
+    |> Enum.with_index()
+    |> Enum.reduce([], &get_char_coords(&1, &2, x_max))
+    |> get_permutations()
+    |> Enum.map(&(get_path_dist(&1) + path_ext(&1, empty_x, empty_y, gap_length)))
     |> Enum.sum()
   end
 
-  defp path_ext_lengths([{x_a, y_a}, {x_b, y_b}], x_exts, y_exts, gap) do
-    x_m = count_points_between(x_a, x_b, x_exts) * (gap - 1)
-    y_m = count_points_between(y_a, y_b, y_exts) * (gap - 1)
-    {x_m, y_m}
-  end
+  defp get_char_coords({char, idx}, acc, x_max),
+    do: if(char == "#", do: [get_coords(idx, x_max) | acc], else: acc)
 
-  defp sort_num(a, b) do
-    cond do
-      a > b -> {b, a}
-      b > a -> {a, b}
-      true -> {a, b}
-    end
-  end
+  defp parse_rows(rows),
+    do: {
+      last_idx_of_first_row(rows),
+      get_empty_indices(rows |> to_columns()),
+      get_empty_indices(rows)
+    }
+
+  defp path_ext([{x_a, y_a}, {x_b, y_b}], x_exts, y_exts, gap),
+    do:
+      count_points_between(x_a, x_b, x_exts) * (gap - 1) +
+        count_points_between(y_a, y_b, y_exts) * (gap - 1)
 
   defp count_points_between(a, b, points) do
-    {lower, upper} = sort_num(a, b)
+    [lower, upper] = Enum.sort([a, b])
 
     points
     |> Enum.count(fn point ->
@@ -66,38 +36,45 @@ defmodule Day11.Utils do
     end)
   end
 
-  defp get_path_dist([{x_a, y_a}, {x_b, y_b}]) do
-    abs(x_a - x_b) + abs(y_a - y_b)
-  end
+  defp get_path_dist([{x_a, y_a}, {x_b, y_b}]),
+    do: abs(x_a - x_b) + abs(y_a - y_b)
 
-  defp get_permutations(coords_list) do
-    coord_strings = coords_list |> Enum.map(&to_coord_string/1)
+  defp get_permutations(coords_list),
+    do:
+      coords_list
+      |> Enum.reduce(
+        [],
+        &permute(
+          &1,
+          &2,
+          coords_list
+          |> Enum.map(fn coord ->
+            to_coord_string(coord)
+          end)
+        )
+      )
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.map(fn comb_str ->
+        comb_str
+        |> String.split("_")
+        |> Enum.map(&from_coord_string/1)
+      end)
 
-    coords_list
-    |> Enum.reduce([], fn coord, acc ->
-      coord_string = to_coord_string(coord)
-
-      combined_strings =
-        coord_strings
-        |> Enum.filter(fn c_str ->
-          c_str != coord_string
-        end)
-        |> Enum.map(fn c_str ->
-          [c_str, coord_string]
-          |> Enum.sort()
-          |> Enum.join("_")
-        end)
-
-      acc ++ [combined_strings]
-    end)
-    |> List.flatten()
-    |> Enum.uniq()
-    |> Enum.map(fn comb_str ->
-      comb_str
-      |> String.split("_")
-      |> Enum.map(&from_coord_string/1)
-    end)
-  end
+  defp permute(coord, acc, coord_strings),
+    do:
+      acc ++
+        [
+          coord_strings
+          |> Enum.filter(fn c_str ->
+            c_str != to_coord_string(coord)
+          end)
+          |> Enum.map(fn c_str ->
+            [c_str, to_coord_string(coord)]
+            |> Enum.sort()
+            |> Enum.join("_")
+          end)
+        ]
 
   defp to_coord_string({x, y}), do: "#{x}-#{y}"
 
