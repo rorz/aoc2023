@@ -7,10 +7,25 @@ defmodule Day11.Utils do
     |> List.flatten()
     |> Enum.with_index()
     |> Enum.reduce([], &get_char_coords(&1, &2, x_max))
+    |> mirror_with_strings()
     |> get_permutations()
-    |> Enum.map(&(get_path_dist(&1) + path_ext(&1, empty_x, empty_y, gap_length)))
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.map(&from_combined_coord_strings/1)
+    |> Enum.flat_map(
+      &[
+        get_path_dist(&1),
+        path_ext(&1, empty_x, empty_y, gap_length)
+      ]
+    )
     |> Enum.sum()
   end
+
+  defp mirror_with_strings(coords),
+    do: {
+      coords,
+      coords |> Enum.map(&to_coord_string/1)
+    }
 
   defp get_char_coords({char, idx}, acc, x_max),
     do: if(char == "#", do: [get_coords(idx, x_max) | acc], else: acc)
@@ -31,15 +46,13 @@ defmodule Day11.Utils do
     [lower, upper] = Enum.sort([a, b])
 
     points
-    |> Enum.count(fn point ->
-      point > lower and point < upper
-    end)
+    |> Enum.count(&(&1 > lower and &1 < upper))
   end
 
   defp get_path_dist([{x_a, y_a}, {x_b, y_b}]),
     do: abs(x_a - x_b) + abs(y_a - y_b)
 
-  defp get_permutations(coords_list),
+  defp get_permutations({coords_list, coords_list_strings}),
     do:
       coords_list
       |> Enum.reduce(
@@ -47,19 +60,9 @@ defmodule Day11.Utils do
         &permute(
           &1,
           &2,
-          coords_list
-          |> Enum.map(fn coord ->
-            to_coord_string(coord)
-          end)
+          coords_list_strings
         )
       )
-      |> List.flatten()
-      |> Enum.uniq()
-      |> Enum.map(fn comb_str ->
-        comb_str
-        |> String.split("_")
-        |> Enum.map(&from_coord_string/1)
-      end)
 
   defp permute(coord, acc, coord_strings),
     do:
@@ -80,6 +83,12 @@ defmodule Day11.Utils do
 
   defp from_coord_string(str),
     do: str |> String.split("-") |> Enum.map(&Utils.to_int/1) |> List.to_tuple()
+
+  defp from_combined_coord_strings(strings),
+    do:
+      strings
+      |> String.split("_")
+      |> Enum.map(&from_coord_string/1)
 
   defp get_coords(idx, x_max),
     do: {
