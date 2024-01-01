@@ -5,13 +5,17 @@ defmodule Day12Test do
   alias Day12.Part2, as: Part2
 
   @example """
-  EXAMPLE_INPUT_HERE
+  #.#.### 1,1,3
+  .#...#....###. 1,1,3
+  .#.###.#.###### 1,3,1,6
+  ####.#...#... 4,1,1
+  #....######..#####. 1,6,5
+  .###.##....# 3,2,1
   """
 
-  @tag :skip
   @tag example: true
   test "solves the example input for part 1" do
-    assert Part1.solve(@example) == nil
+    assert Part1.solve(@example) == 21
   end
 
   @tag :skip

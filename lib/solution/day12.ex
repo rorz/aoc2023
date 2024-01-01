@@ -2,6 +2,10 @@ defmodule Day12.Part1 do
   def solve(input) do
     nil
   end
+
+  def get_all_permutations_for_line(sequences, length) do
+
+  end
 end
 
 defmodule Day12.Part2 do
