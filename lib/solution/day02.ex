@@ -73,22 +73,12 @@ defmodule Day02.Part2 do
     |> Enum.sum()
   end
 
-  def get_number(string) do
-    case Integer.parse(string) do
-      {number, _} ->
-        number
-
-      :error ->
-        :error
-    end
-  end
-
   defp get_color_value_pairs(cube_lists_string) do
     Regex.split(~r/[,;]/, cube_lists_string)
     |> Enum.map(&String.trim/1)
     |> Enum.reduce(Map.new(), fn cube_string, acc ->
       [value_string, color] = String.split(cube_string, " ")
-      value = get_number(value_string)
+      value = Utils.to_int(value_string)
 
       Map.update(acc, color, [value], fn values ->
         [value | values]
