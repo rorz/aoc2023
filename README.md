@@ -1,21 +1,13 @@
-# Aoc2023
+# Advent of Code 2023 in Elixir
 
-**TODO: Add description**
+This repo is my attempt to learn Elixir by completing challenges from the Advent of Code 2023.
 
-## Installation
+I based some of this repo on https://github.com/jzimbel/adventofcode-elixir
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `aoc2023` to your list of dependencies in `mix.exs`:
+### Setting up a new day
 
-```elixir
-def deps do
-  [
-    {:aoc2023, "~> 0.1.0"}
-  ]
-end
+Run the following command from inside the directory
+
+```bash
+mix aoc.gen --day <DAY_NUMBER>
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/aoc2023>.
-
