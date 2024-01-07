@@ -1,10 +1,24 @@
 defmodule Day12.Part1 do
   def solve(input) do
-    nil
+    lines =
+      Utils.split_into_lines(input)
+      |> Enum.map(&parse_line/1)
+
+    IO.inspect(lines)
   end
 
-  def get_all_permutations_for_line(sequences, length) do
+  defp parse_line(line) do
+    [record_str, spring_counts_str] = line |> String.split(" ", trim: true)
+    record_length = record_str |> String.length()
 
+    spring_counts =
+      spring_counts_str |> String.split(",", trim: true) |> Enum.map(&Utils.to_int/1)
+
+    {record_str, record_length, spring_counts}
+  end
+
+  defp get_all_permutations_for_line(record_length, spring_counts) do
+    allocable_spaces = record_length - Enum.sum(spring_counts)
   end
 end
 
